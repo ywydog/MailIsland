@@ -18,6 +18,8 @@ public sealed class MailIslandConfigData
     public int MailCountLimit { get; set; } = 50;
     public bool NotifyEnabled { get; set; } = true;
     public List<KeywordRule> KeywordRules { get; set; } = new();
+    /// <summary>提醒正文层显示内容：发件人还是邮件正文。</summary>
+    public OverlayContentKind OverlayContentKind { get; set; } = OverlayContentKind.Sender;
 }
 
 /// <summary>账号设置。</summary>

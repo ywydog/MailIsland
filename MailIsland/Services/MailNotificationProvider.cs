@@ -2,6 +2,7 @@ using ClassIsland.Core.Abstractions.Services.NotificationProviders;
 using ClassIsland.Core.Attributes;
 using ClassIsland.Core.Models.Notification;
 using MailIsland.Logic.Config;
+using MailIsland.Logic.Shared;
 using MailIsland.Models;
 using MailIsland.Shared;
 
@@ -20,16 +21,13 @@ namespace MailIsland.Services;
 public sealed class MailNotificationProvider : NotificationProviderBase
 {
     /// <summary>推送新邮件提醒。</summary>
-    public void Notify(MailMessage mail, MailAccountSettings account, bool keywordHit, string? keyword = null)
+    public void Notify(MailMessage mail, MailAccountSettings account, OverlayContentKind overlayKind, bool keywordHit, string? keyword = null)
     {
         var title = keywordHit && !string.IsNullOrEmpty(keyword)
             ? $"【{keyword}】{account.DisplayName} 新邮件"
             : $"{account.DisplayName} 新邮件";
 
-        var sender = string.IsNullOrWhiteSpace(mail.SenderName)
-            ? mail.SenderEmail
-            : $"{mail.SenderName} <{mail.SenderEmail}>";
-        var body = $"{sender}\n{mail.Subject}";
+        var body = BuildOverlayBody(mail, overlayKind);
 
         var request = new NotificationRequest
         {
@@ -38,5 +36,22 @@ public sealed class MailNotificationProvider : NotificationProviderBase
         };
 
         ShowNotification(request);
+    }
+
+    /// <summary>根据用户设置构建正文层文本。</summary>
+    private static string BuildOverlayBody(MailMessage mail, OverlayContentKind overlayKind)
+    {
+        // 选择邮件正文且正文为空时，回退到发件人信息
+        if (overlayKind == OverlayContentKind.Body && !string.IsNullOrWhiteSpace(mail.TextBody))
+        {
+            return mail.TextBody;
+        }
+
+        var sender = string.IsNullOrWhiteSpace(mail.SenderName)
+            ? mail.SenderEmail
+            : $"{mail.SenderName} <{mail.SenderEmail}>";
+        return string.IsNullOrWhiteSpace(mail.Subject)
+            ? sender
+            : $"{sender}\n{mail.Subject}";
     }
 }

@@ -164,7 +164,7 @@ public sealed class MailPollingService : BackgroundService
 
         if (hit)
         {
-            _notifier.Notify(mail, account, !string.IsNullOrEmpty(hitKeyword), hitKeyword);
+            _notifier.Notify(mail, account, _config.Data.OverlayContentKind, !string.IsNullOrEmpty(hitKeyword), hitKeyword);
         }
     }
 

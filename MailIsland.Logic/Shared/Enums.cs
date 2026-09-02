@@ -15,3 +15,10 @@ public enum PresetKind
     Official,   // 内置官方预设
     Custom,     // 自定义
 }
+
+/// <summary>提醒正文层显示的内容。</summary>
+public enum OverlayContentKind
+{
+    Sender,   // 发件人 + 主题
+    Body,     // 邮件正文
+}

@@ -14,6 +14,7 @@ public partial class NotifyTabViewModel : ObservableObject
     [ObservableProperty] private bool _notifyEnabled;
     [ObservableProperty] private int _pollIntervalMinutes;
     [ObservableProperty] private int _mailCountLimit;
+    [ObservableProperty] private OverlayContentKind _overlayContentKind;
     [ObservableProperty] private string _status = "";
 
     public NotifyTabViewModel(MailIslandConfigHandler config)
@@ -24,11 +25,15 @@ public partial class NotifyTabViewModel : ObservableObject
         _notifyEnabled = config.Data.NotifyEnabled;
         _pollIntervalMinutes = config.Data.PollIntervalMinutes;
         _mailCountLimit = config.Data.MailCountLimit;
+        _overlayContentKind = config.Data.OverlayContentKind;
     }
 
     public ObservableCollection<KeywordRule> Keywords { get; }
 
     public Array MatchScopes => Enum.GetValues(typeof(KeywordMatchScope));
+
+    /// <summary>正文层显示选项的中文名，顺序与 <see cref="OverlayContentKind"/> 一致。</summary>
+    public string[] OverlayContentKindNames => ["发件人 + 主题", "邮件正文"];
 
     partial void OnNotifyEnabledChanged(bool value) { _config.Data.NotifyEnabled = value; _config.Save(); }
 
@@ -43,6 +48,12 @@ public partial class NotifyTabViewModel : ObservableObject
     {
         var clamped = Math.Clamp(value, 1, 500);
         _config.Data.MailCountLimit = clamped;
+        _config.Save();
+    }
+
+    partial void OnOverlayContentKindChanged(OverlayContentKind value)
+    {
+        _config.Data.OverlayContentKind = value;
         _config.Save();
     }
 
