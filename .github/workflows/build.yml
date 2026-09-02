@@ -1,0 +1,36 @@
+name: Build MailIsland
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore MailIsland.sln
+
+      - name: Publish plugin
+        run: dotnet publish MailIsland/MailIsland.csproj -c Release --no-restore -o "./artifacts/MailIsland"
+
+      - name: Package plugin
+        shell: pwsh
+        run: Compress-Archive -Path "./artifacts/MailIsland/*" -DestinationPath "./artifacts/MailIsland.zip" -Force
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mailisland-plugin
+          path: "./artifacts/MailIsland.zip"
