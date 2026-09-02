@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MailIsland.Logic", "MailIsl
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MailIsland.Logic.Tests", "MailIsland.Logic.Tests\MailIsland.Logic.Tests.csproj", "{5AF12A27-1D86-4100-AAA0-864F3C29DF77}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MailIsland", "MailIsland\MailIsland.csproj", "{10947E4B-11AB-42DE-9344-7CDB9B7184C4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +26,9 @@ Global
 		{5AF12A27-1D86-4100-AAA0-864F3C29DF77}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5AF12A27-1D86-4100-AAA0-864F3C29DF77}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5AF12A27-1D86-4100-AAA0-864F3C29DF77}.Release|Any CPU.Build.0 = Release|Any CPU
+		{10947E4B-11AB-42DE-9344-7CDB9B7184C4}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{10947E4B-11AB-42DE-9344-7CDB9B7184C4}.Debug|Any CPU.Build.0 = Debug|x64
+		{10947E4B-11AB-42DE-9344-7CDB9B7184C4}.Release|Any CPU.ActiveCfg = Release|x64
+		{10947E4B-11AB-42DE-9344-7CDB9B7184C4}.Release|Any CPU.Build.0 = Release|x64
 	EndGlobalSection
 EndGlobal

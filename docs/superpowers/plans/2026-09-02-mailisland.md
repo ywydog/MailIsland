@@ -1059,14 +1059,12 @@ using MailIsland.Models;
 
 namespace MailIsland.Services;
 
-[NotificationProviderInfo("A1B2C3D4-5E6F-7890-ABCD-EF1234567890", "邮箱新邮件提醒",
-    Name = "邮箱新邮件提醒")]
+// 注意：NotificationProviderBase 的 Name/Description/ProviderGuid 为普通可写属性（非 virtual），
+// 在基类构造函数中由 [NotificationProviderInfo] 自动填充，子类不可 override，也无需手动设置。
+[NotificationProviderInfo("A1B2C3D4-5E6F-7890-ABCD-EF1234567890", "邮箱新邮件提醒", "\uE8B7",
+    "通过邮箱插件拉取新邮件，命中关键词时推送提醒。")]
 public sealed class MailNotificationProvider : NotificationProviderBase
 {
-    public override Guid ProviderGuid { get; set; } = new("A1B2C3D4-5E6F-7890-ABCD-EF1234567890");
-    public override string Name { get; set; } = "邮箱新邮件提醒";
-    public override string Description { get; set; } = "通过邮箱插件拉取新邮件，命中关键词或默认开启时推送提醒。";
-
     public void Notify(MailMessage mail, MailAccountSettings account, bool keywordHit, string? keyword = null)
     {
         var title = keywordHit && !string.IsNullOrEmpty(keyword)

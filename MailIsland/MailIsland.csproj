@@ -5,8 +5,10 @@
     <TargetFramework>net8.0-windows10.0.17763.0</TargetFramework>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
-    <UseWindowsForms>true</UseWindowsForms>
+    <UseWindowsForms>false</UseWindowsForms>
     <EnableDynamicLoading>true</EnableDynamicLoading>
+    <!-- 允许在 Linux/macOS 上交叉编译 Windows 目标（构建校验用） -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <ImplicitUsings>enable</ImplicitUsings>
     <Platforms>x64</Platforms>
     <RootNamespace>MailIsland</RootNamespace>

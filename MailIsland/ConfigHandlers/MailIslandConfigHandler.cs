@@ -25,7 +25,7 @@ public sealed class MailIslandConfigHandler
     /// <summary>获取当前凭据保护器（供 UI 查看/设置授权码明文）。</summary>
     public ICredentialProtector Protector => _protector;
 
-    public void Save() => ConfigureFileHelper.SaveConfig(_configPath, Data, writeIndented: true);
+    public void Save() => ConfigureFileHelper.SaveConfig(_configPath, Data);
 
     private MailIslandConfigData Load()
     {

@@ -1,0 +1,74 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:FluentAvalonia.UI.Controls;assembly=FluentAvalonia"
+             xmlns:conv="clr-namespace:MailIsland.Converters"
+             x:Class="MailIsland.SettingsPage.Views.MailTabPage">
+
+    <UserControl.Resources>
+        <conv:UnreadBoldConverter x:Key="UnreadBoldConverter" />
+    </UserControl.Resources>
+
+    <Grid RowDefinitions="Auto,*">
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="收件账号" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                <ComboBox x:Name="AccountCombo" MinWidth="200" />
+            </StackPanel>
+            <Button x:Name="RefreshButton"
+                    Grid.Column="1"
+                    Content="刷新" />
+        </Grid>
+
+        <Grid Grid.Row="1" ColumnDefinitions="3*,*">
+            <!-- 邮件列表 -->
+            <Border Grid.Column="0"
+                    CornerRadius="8"
+                    Padding="8"
+                    Background="{DynamicResource LayerFillColorDefaultBrush}">
+                <DockPanel>
+                    <TextBlock x:Name="StatusText"
+                               DockPanel.Dock="Top"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <ListBox x:Name="MessageList">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Spacing="2" Margin="0,4">
+                                    <TextBlock Text="{Binding Subject}"
+                                               TextTrimming="CharacterEllipsis"
+                                               FontWeight="{Binding IsUnread, Converter={StaticResource UnreadBoldConverter}}" />
+                                    <TextBlock Text="{Binding SenderName}"
+                                               FontSize="12"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+            </Border>
+
+            <!-- 邮件详情 -->
+            <Border Grid.Column="1"
+                    Margin="8,0,0,0"
+                    CornerRadius="8"
+                    Padding="16"
+                    Background="{DynamicResource LayerFillColorDefaultBrush}">
+                <ScrollViewer>
+                    <StackPanel x:Name="DetailPanel" Spacing="8">
+                        <TextBlock x:Name="DetailSubject"
+                                   FontSize="18"
+                                   FontWeight="SemiBold"
+                                   TextWrapping="Wrap" />
+                        <TextBlock x:Name="DetailFrom"
+                                   FontSize="13"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBlock x:Name="DetailDate"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <ContentControl x:Name="BodyHost" />
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>
