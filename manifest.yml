@@ -1,0 +1,12 @@
+# 插件清单文件：https://docs.classisland.tech/dev/plugins/create-project/#插件清单文件
+id: MailIsland
+name: 邮箱
+description: 国内邮箱适配（IMAP/SMTP 授权码，非 OAuth）。支持多账户、查看邮件与 HTML 渲染，并通过 ClassIsland 提醒服务推送新邮件提醒，支持关键词提醒。
+entranceAssembly: "MailIsland.dll"
+url: https://github.com/ywydog/MailIsland
+version: 1.0.0.0
+apiVersion: 2.0.0.0
+author: ywydog
+icon: icon.png
+supportedOSPlatforms:
+- Windows
