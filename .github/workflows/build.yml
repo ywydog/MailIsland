@@ -25,12 +25,24 @@ jobs:
       - name: Publish plugin
         run: dotnet publish MailIsland/MailIsland.csproj -c Release --no-restore -o "./artifacts/MailIsland"
 
-      - name: Package plugin
+      - name: Inspect plugin dependencies
         shell: pwsh
-        run: Compress-Archive -Path "./artifacts/MailIsland/*" -DestinationPath "./artifacts/MailIsland.zip" -Force
+        run: |
+          Write-Host "===== 插件目录内 dll 清单 ====="
+          Get-ChildItem "./artifacts/MailIsland/*.dll" | Select-Object -ExpandProperty Name
+          Write-Host "===== 应被宿主提供、不应出现的库 ====="
+          $hostLibs = @("ClassIsland.Core","ClassIsland.PluginSdk","Avalonia","FluentAvalonia","CommunityToolkit.Mvvm")
+          foreach ($lib in $hostLibs) {
+            $hit = Get-ChildItem "./artifacts/MailIsland/$lib*.dll" -ErrorAction SilentlyContinue
+            if ($hit) { Write-Host "!! 发现宿主库残留: $lib" } else { Write-Host "OK: 未包含 $lib" }
+          }
+
+      - name: Package plugin (CIPX)
+        shell: pwsh
+        run: Compress-Archive -Path "./artifacts/MailIsland/*" -DestinationPath "./artifacts/MailIsland.cipx" -Force
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: mailisland-plugin
-          path: "./artifacts/MailIsland.zip"
+          path: "./artifacts/MailIsland.cipx"
