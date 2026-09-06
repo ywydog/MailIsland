@@ -19,8 +19,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="ClassIsland.PluginSdk" Version="2.0.0.1" />
-    <PackageReference Include="ClassIsland.Core" Version="2.0.0.1" />
+    <PackageReference Include="ClassIsland.PluginSdk" Version="2.0.0.1">
+      <!-- 宿主已提供 ClassIsland.Core / PluginSdk 及运行时依赖，不随插件复制，
+           避免插件目录携带宿主自身 DLL 导致加载冲突（表现为“已安装，未加载”）。 -->
+      <ExcludeAssets>runtime; native</ExcludeAssets>
+    </PackageReference>
     <PackageReference Include="MailKit" Version="4.17.0" />
     <PackageReference Include="HtmlAgilityPack" Version="1.11.71" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
