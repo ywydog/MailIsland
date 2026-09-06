@@ -36,6 +36,9 @@ public sealed class MailPollingService : BackgroundService
     /// <summary>同步状态变化：arg = 描述文本。</summary>
     public event EventHandler<string>? SyncStatusChanged;
 
+    /// <summary>新邮件到达（供自动化触发器订阅）。</summary>
+    public event EventHandler<MailMessage>? NewMailReceived;
+
     /// <summary>上次同步时间。</summary>
     public DateTimeOffset? LastSyncTime { get; private set; }
 
@@ -119,6 +122,7 @@ public sealed class MailPollingService : BackgroundService
                 if (!isFirstSeen && mail.Uid > lastUid)
                 {
                     TryNotify(account, mail);
+                    NewMailReceived?.Invoke(this, mail);
                 }
 
                 _lastUidByAccount[prefix] = isFirstSeen ? mail.Uid : Math.Max(lastUid, mail.Uid);

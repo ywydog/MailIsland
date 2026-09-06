@@ -1,0 +1,27 @@
+<ci:TriggerSettingsControlBase xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ci="http://classisland.tech/schemas/xaml/core"
+             xmlns:controls="clr-namespace:MailIsland.Controls.TriggerSettingsControls"
+             xmlns:automation="clr-namespace:MailIsland.Models.Automation"
+             xmlns:conv="clr-namespace:MailIsland.Converters"
+             x:TypeArguments="automation:NewMailTriggerSettings"
+             x:Class="MailIsland.Controls.TriggerSettingsControls.NewMailTriggerSettingsControl">
+
+    <ci:TriggerSettingsControlBase.Resources>
+        <conv:EnumIndexConverter x:Key="EnumIndexConverter" />
+    </ci:TriggerSettingsControlBase.Resources>
+
+    <StackPanel Orientation="Horizontal" Spacing="6"
+                DataContext="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=controls:NewMailTriggerSettingsControl}}">
+        <ComboBox ItemsSource="{Binding TargetNames}"
+                  SelectedIndex="{Binding Settings.Target, Mode=TwoWay, Converter={StaticResource EnumIndexConverter}}"
+                  MinWidth="88"
+                  VerticalAlignment="Center" />
+        <TextBlock Text="包含" VerticalAlignment="Center"
+                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+        <TextBox Text="{Binding Settings.Keyword, Mode=TwoWay}"
+                 Watermark="关键词"
+                 MinWidth="180"
+                 VerticalAlignment="Center" />
+    </StackPanel>
+</ci:TriggerSettingsControlBase>

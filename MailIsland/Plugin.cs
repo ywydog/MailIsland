@@ -29,6 +29,9 @@ public partial class Plugin : PluginBase
         // 注册提醒提供方（会自动注册为托管服务）
         services.AddNotificationProvider<MailNotificationProvider>();
 
+        // 注册自动化触发器
+        services.AddTrigger<Services.Automation.Triggers.NewMailTrigger, Controls.TriggerSettingsControls.NewMailTriggerSettingsControl>();
+
         // 注册设置页
         services.AddSettingsPage<SettingsPage.MailIslandSettingsPage>();
 
