@@ -24,9 +24,12 @@
            避免插件目录携带宿主自身 DLL 导致加载冲突（表现为“已安装，未加载”）。 -->
       <ExcludeAssets>runtime; native</ExcludeAssets>
     </PackageReference>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0">
+      <!-- 宿主亦使用 CommunityToolkit.Mvvm，运行时复用宿主程序集，不随插件复制，避免类型出现两个实例。 -->
+      <ExcludeAssets>runtime; native</ExcludeAssets>
+    </PackageReference>
     <PackageReference Include="MailKit" Version="4.17.0" />
     <PackageReference Include="HtmlAgilityPack" Version="1.11.71" />
-    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
   </ItemGroup>
 
   <ItemGroup>
