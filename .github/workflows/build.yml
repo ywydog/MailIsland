@@ -23,29 +23,31 @@ jobs:
         run: dotnet restore MailIsland.sln
 
       - name: Publish plugin (CIPX)
-        run: dotnet publish MailIsland/MailIsland.csproj -c Release --no-restore -p:CreateCipx=true -p:PublishDir="./artifacts/MailIsland" --nologo
+        # SDK 的 CreateCipx 目标在 Build 后自动产出 MailIsland/cipx/MailIsland.cipx；-o 指定发布输出目录供依赖检查
+        run: dotnet publish MailIsland/MailIsland.csproj -c Release --no-restore -p:CreateCipx=true -o "${{ github.workspace }}/artifacts/MailIsland" --nologo
 
       - name: Inspect plugin dependencies
         shell: pwsh
         run: |
           Write-Host "===== 插件目录内 dll 清单 ====="
-          Get-ChildItem "./artifacts/MailIsland/*.dll" | Select-Object -ExpandProperty Name
+          Get-ChildItem "${{ github.workspace }}/artifacts/MailIsland/*.dll" | Select-Object -ExpandProperty Name
           Write-Host "===== 应被宿主提供、不应出现的库 ====="
           $hostLibs = @("ClassIsland.Core","ClassIsland.PluginSdk","Avalonia","FluentAvalonia","CommunityToolkit.Mvvm")
           foreach ($lib in $hostLibs) {
-            $hit = Get-ChildItem "./artifacts/MailIsland/$lib*.dll" -ErrorAction SilentlyContinue
+            $hit = Get-ChildItem "${{ github.workspace }}/artifacts/MailIsland/$lib*.dll" -ErrorAction SilentlyContinue
             if ($hit) { Write-Host "!! 发现宿主库残留: $lib" } else { Write-Host "OK: 未包含 $lib" }
           }
 
       - name: Copy CIPX to artifacts
         shell: pwsh
         run: |
-          $cipx = Get-ChildItem -Recurse -Filter "MailIsland.cipx" -Path "./MailIsland" | Select-Object -First 1
+          $cipx = Get-ChildItem -Recurse -Filter "MailIsland.cipx" -Path "${{ github.workspace }}/MailIsland" | Select-Object -First 1
           if (-not $cipx) { Write-Error "未找到 SDK 生成的 MailIsland.cipx" ; exit 1 }
-          Copy-Item $cipx.FullName "./artifacts/MailIsland.cipx" -Force
+          Copy-Item $cipx.FullName "${{ github.workspace }}/artifacts/MailIsland.cipx" -Force
+          Write-Host "CIPX: $($cipx.FullName)"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: mailisland-plugin
-          path: "./artifacts/MailIsland.cipx"
+          path: "${{ github.workspace }}/artifacts/MailIsland.cipx"
