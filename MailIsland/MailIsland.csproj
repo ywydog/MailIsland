@@ -12,6 +12,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Platforms>x64</Platforms>
     <RootNamespace>MailIsland</RootNamespace>
+    <!-- 宿主 ClassIsland.PluginSdk (2.1.1.1) 在 Build 后通过 CreateCipx 自动打包为 CIPX -->
+    <CreateCipx>true</CreateCipx>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="ClassIsland.PluginSdk" Version="2.0.0.1">
+    <PackageReference Include="ClassIsland.PluginSdk" Version="2.1.1.1">
       <!-- 宿主已提供 ClassIsland.Core / PluginSdk 及运行时依赖，不随插件复制，
            避免插件目录携带宿主自身 DLL 导致加载冲突（表现为“已安装，未加载”）。 -->
       <ExcludeAssets>runtime; native</ExcludeAssets>

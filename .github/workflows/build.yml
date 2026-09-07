@@ -22,8 +22,8 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore MailIsland.sln
 
-      - name: Publish plugin
-        run: dotnet publish MailIsland/MailIsland.csproj -c Release --no-restore -o "./artifacts/MailIsland"
+      - name: Publish plugin (CIPX)
+        run: dotnet publish MailIsland/MailIsland.csproj -c Release --no-restore -p:CreateCipx=true -p:PublishDir="./artifacts/MailIsland" --nologo
 
       - name: Inspect plugin dependencies
         shell: pwsh
@@ -37,9 +37,12 @@ jobs:
             if ($hit) { Write-Host "!! 发现宿主库残留: $lib" } else { Write-Host "OK: 未包含 $lib" }
           }
 
-      - name: Package plugin (CIPX)
+      - name: Copy CIPX to artifacts
         shell: pwsh
-        run: Compress-Archive -Path "./artifacts/MailIsland/*" -DestinationPath "./artifacts/MailIsland.cipx" -Force
+        run: |
+          $cipx = Get-ChildItem -Recurse -Filter "MailIsland.cipx" -Path "./MailIsland" | Select-Object -First 1
+          if (-not $cipx) { Write-Error "未找到 SDK 生成的 MailIsland.cipx" ; exit 1 }
+          Copy-Item $cipx.FullName "./artifacts/MailIsland.cipx" -Force
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
