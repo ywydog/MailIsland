@@ -26,8 +26,10 @@
            避免插件目录携带宿主自身 DLL 导致加载冲突（表现为“已安装，未加载”）。 -->
       <ExcludeAssets>runtime; native</ExcludeAssets>
     </PackageReference>
-    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0">
-      <!-- 宿主亦使用 CommunityToolkit.Mvvm，运行时复用宿主程序集，不随插件复制，避免类型出现两个实例。 -->
+    <!-- 版本须与宿主 ClassIsland.Shared 一致（官方 pin 8.2.1），否则强签名程序集版本不匹配导致
+         插件加载时 FileNotFoundException（已改为与宿主 2.1.0.1 对齐的 8.2.1）。
+         宿主亦使用 CommunityToolkit.Mvvm，运行时复用宿主程序集，不随插件复制，避免类型出现两个实例。 -->
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.1">
       <ExcludeAssets>runtime; native</ExcludeAssets>
     </PackageReference>
     <PackageReference Include="MailKit" Version="4.17.0" />

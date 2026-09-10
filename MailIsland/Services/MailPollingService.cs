@@ -1,3 +1,4 @@
+using Avalonia.Threading;
 using MailIsland.ConfigHandlers;
 using MailIsland.Logic.Config;
 using MailIsland.Logic.Keyword;
@@ -33,7 +34,7 @@ public sealed class MailPollingService : BackgroundService
         _logger = logger;
     }
 
-    /// <summary>同步状态变化：arg = 描述文本。</summary>
+    /// <summary>同步状态变化：arg = 描述文本。状态供 UI 展示，统一切到 UI 线程通知。</summary>
     public event EventHandler<string>? SyncStatusChanged;
 
     /// <summary>新邮件到达（供自动化触发器订阅）。</summary>
@@ -73,7 +74,7 @@ public sealed class MailPollingService : BackgroundService
     {
         if (!await _syncLock.WaitAsync(TimeSpan.Zero, ct))
         {
-            SyncStatusChanged?.Invoke(this, "同步进行中…");
+            RaiseSyncStatus("同步进行中…");
             return;
         }
 
@@ -83,7 +84,7 @@ public sealed class MailPollingService : BackgroundService
             var accounts = _config.Data.Accounts.Where(a => a.Enabled &&
                 !string.IsNullOrWhiteSpace(a.Email) && !string.IsNullOrWhiteSpace(a.ImapServer)).ToList();
 
-            SyncStatusChanged?.Invoke(this, accounts.Count == 0 ? "无启用账号" : $"正在同步 {accounts.Count} 个账号…");
+            RaiseSyncStatus(accounts.Count == 0 ? "无启用账号" : $"正在同步 {accounts.Count} 个账号…");
 
             foreach (var account in accounts)
             {
@@ -91,7 +92,7 @@ public sealed class MailPollingService : BackgroundService
             }
 
             LastSyncTime = DateTimeOffset.Now;
-            SyncStatusChanged?.Invoke(this, $"同步完成（{DateTime.Now:HH:mm:ss}）");
+            RaiseSyncStatus($"同步完成（{DateTime.Now:HH:mm:ss}）");
         }
         finally
         {
@@ -121,8 +122,14 @@ public sealed class MailPollingService : BackgroundService
                 // 首轮仅建立水位，不提醒；后续仅处理更新的邮件
                 if (!isFirstSeen && mail.Uid > lastUid)
                 {
-                    TryNotify(account, mail);
-                    NewMailReceived?.Invoke(this, mail);
+                    // 通知与自动化触发涉及 UI，统一切到 UI 线程执行
+                    var capturedAccount = account;
+                    var capturedMail = mail;
+                    RunOnUiThread(() =>
+                    {
+                        TryNotify(capturedAccount, capturedMail);
+                        NewMailReceived?.Invoke(this, capturedMail);
+                    });
                 }
 
                 _lastUidByAccount[prefix] = isFirstSeen ? mail.Uid : Math.Max(lastUid, mail.Uid);
@@ -135,7 +142,7 @@ public sealed class MailPollingService : BackgroundService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "账号 {Email} 同步失败", account.Email);
-            SyncStatusChanged?.Invoke(this, $"账号 {account.DisplayName} 同步失败");
+            RaiseSyncStatus($"账号 {account.DisplayName} 同步失败");
         }
     }
 
@@ -174,4 +181,28 @@ public sealed class MailPollingService : BackgroundService
 
     private static bool RuleMatches(MailCandidate candidate, KeywordRule rule) =>
         KeywordMatcher.Matches(candidate, new[] { rule });
+
+    /// <summary>在 UI 线程上执行操作。已在 UI 线程则直接执行；否则通过 Dispatcher 投递。</summary>
+    private static void RunOnUiThread(Action action)
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            action();
+            return;
+        }
+
+        // 应用退出时 Dispatcher 可能已停止，闪念投递异常，忽略即可
+        try
+        {
+            Dispatcher.UIThread.Post(action);
+        }
+        catch
+        {
+            // 忽略：应用关闭竞态
+        }
+    }
+
+    /// <summary>在 UI 线程上广播同步状态（供 UI 展示）。</summary>
+    private void RaiseSyncStatus(string text) =>
+        RunOnUiThread(() => SyncStatusChanged?.Invoke(this, text));
 }

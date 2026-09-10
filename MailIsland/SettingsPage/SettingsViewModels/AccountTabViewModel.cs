@@ -82,7 +82,7 @@ public partial class AccountTabViewModel : ObservableObject
         foreach (var a in Accounts) a.IsSelected = false;
         Accounts.Add(acc);
         Current = acc;
-        ConfigHighlightFirst();
+        SaveAccounts();
     }
 
     /// <summary>删除当前账号。</summary>
@@ -90,9 +90,8 @@ public partial class AccountTabViewModel : ObservableObject
     {
         if (Current is not { } acc) return;
         Accounts.Remove(acc);
-        _config.Data.Accounts.Remove(acc);
         Current = Accounts.FirstOrDefault();
-        _config.Save();
+        SaveAccounts();
     }
 
     /// <summary>根据预设填充服务器信息。</summary>
@@ -110,18 +109,12 @@ public partial class AccountTabViewModel : ObservableObject
     }
 
     /// <summary>把 Accounts 变更回写到配置并保存。</summary>
-    public void SaveAll()
+    public void SaveAll() => SaveAccounts();
+
+    /// <summary>把当前列表回写配置并持久化（增删的单一保存入口，避免遗漏）。</summary>
+    private void SaveAccounts()
     {
         _config.Data.Accounts = Accounts.ToList();
         _config.Save();
-    }
-
-    private void ConfigHighlightFirst()
-    {
-        if (Accounts.Count == 1)
-        {
-            _config.Data.Accounts = Accounts.ToList();
-            _config.Save();
-        }
     }
 }
