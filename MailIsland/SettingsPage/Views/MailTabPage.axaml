@@ -31,7 +31,7 @@
                                DockPanel.Dock="Top"
                                FontSize="12"
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                    <ListBox x:Name="MessageList">
+                    <ListBox x:Name="MessageList" ItemsSource="{Binding Messages}">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel Spacing="2" Margin="0,4">
