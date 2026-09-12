@@ -11,4 +11,7 @@ public static class GlobalConstants
 
     /// <summary>“新邮件命中关键词”自动化触发器 ID（唯一，勿与他人重复）。</summary>
     public const string NewMailTriggerId = "mailisland.newmail.keyword";
+
+    /// <summary>设置页分组 ID（把多个设置页折叠为“邮箱设置”分组）。</summary>
+    public const string SettingsGroupId = "mailisland.settings";
 }

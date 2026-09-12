@@ -5,11 +5,13 @@ using ClassIsland.Core.Attributes;
 using ClassIsland.Shared;
 using MailIsland.ConfigHandlers;
 using MailIsland.Logic.Config;
+using MailIsland.Shared;
 using MailIsland.SettingsPage.SettingsViewModels;
 
 namespace MailIsland.SettingsPage.Views;
 
 /// <summary>消息提醒设置页。</summary>
+[Group(GlobalConstants.SettingsGroupId)]
 [SettingsPageInfo("mailisland.settings.notify", "消息提醒", "\uE82E", "\uE82E")]
 public partial class NotifyTabPage : SettingsPageBase
 {

@@ -32,7 +32,10 @@ public partial class Plugin : PluginBase
         // 注册自动化触发器
         services.AddTrigger<Services.Automation.Triggers.NewMailTrigger, Controls.TriggerSettingsControls.NewMailTriggerSettingsControl>();
 
-        // 注册设置页（多个独立设置页，参照 SystemTools 多页面方式）
+        // 注册设置页分组（折叠下方设置页为一个“邮箱设置”分组）
+        services.AddSettingsPageGroup(Shared.GlobalConstants.SettingsGroupId, "\uE8B7", "邮箱设置");
+
+        // 注册设置页（多个独立设置页，[Group] 特性自动归入上述分组）
         services.AddSettingsPage<SettingsPage.Views.AccountTabPage>();
         services.AddSettingsPage<SettingsPage.Views.MailTabPage>();
         services.AddSettingsPage<SettingsPage.Views.NotifyTabPage>();

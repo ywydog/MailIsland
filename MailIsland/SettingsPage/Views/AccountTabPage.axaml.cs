@@ -7,11 +7,13 @@ using ClassIsland.Shared;
 using MailIsland.ConfigHandlers;
 using MailIsland.Logic.Presets;
 using MailIsland.Services;
+using MailIsland.Shared;
 using MailIsland.SettingsPage.SettingsViewModels;
 
 namespace MailIsland.SettingsPage.Views;
 
 /// <summary>账号设置页。</summary>
+[Group(GlobalConstants.SettingsGroupId)]
 [SettingsPageInfo("mailisland.settings.account", "账号", "\uE078", "\uE078")]
 public partial class AccountTabPage : SettingsPageBase
 {

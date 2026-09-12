@@ -8,11 +8,13 @@ using ClassIsland.Shared;
 using MailIsland.ConfigHandlers;
 using MailIsland.Models;
 using MailIsland.Services;
+using MailIsland.Shared;
 using MailIsland.SettingsPage.SettingsViewModels;
 
 namespace MailIsland.SettingsPage.Views;
 
 /// <summary>邮件设置页。</summary>
+[Group(GlobalConstants.SettingsGroupId)]
 [SettingsPageInfo("mailisland.settings.mail", "邮件", "\uE8B7", "\uE8B7")]
 public partial class MailTabPage : SettingsPageBase
 {
