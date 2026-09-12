@@ -1,12 +1,13 @@
-<UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:controls="clr-namespace:FluentAvalonia.UI.Controls;assembly=FluentAvalonia"
-             xmlns:conv="clr-namespace:MailIsland.Converters"
-             x:Class="MailIsland.SettingsPage.Views.NotifyTabPage">
+<ci:SettingsPageBase x:Class="MailIsland.SettingsPage.Views.NotifyTabPage"
+                     xmlns="https://github.com/avaloniaui"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                     xmlns:ci="http://classisland.tech/schemas/xaml/core"
+                     xmlns:controls="clr-namespace:FluentAvalonia.UI.Controls;assembly=FluentAvalonia"
+                     xmlns:conv="clr-namespace:MailIsland.Converters">
 
-    <UserControl.Resources>
+    <ci:SettingsPageBase.Resources>
         <conv:EnumIndexConverter x:Key="EnumIndexConverter" />
-    </UserControl.Resources>
+    </ci:SettingsPageBase.Resources>
 
     <ScrollViewer>
         <StackPanel Classes="settings-container" Spacing="12">
@@ -59,7 +60,7 @@
                                          Text="{Binding Keyword, Mode=TwoWay}"
                                          Watermark="关键词" />
                                 <ComboBox Grid.Column="2"
-                                          ItemsSource="{Binding DataContext.MatchScopes, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                          ItemsSource="{Binding DataContext.MatchScopes, RelativeSource={RelativeSource AncestorType=ci:SettingsPageBase}}"
                                           SelectedIndex="{Binding Scope, Mode=TwoWay, Converter={StaticResource EnumIndexConverter}}"
                                           MinWidth="110" />
                                 <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="8">
@@ -77,4 +78,4 @@
                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
         </StackPanel>
     </ScrollViewer>
-</UserControl>
+</ci:SettingsPageBase>

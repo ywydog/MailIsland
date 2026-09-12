@@ -2,6 +2,8 @@ using System;
 using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using ClassIsland.Core.Abstractions.Controls;
+using ClassIsland.Core.Attributes;
 using ClassIsland.Shared;
 using MailIsland.ConfigHandlers;
 using MailIsland.Models;
@@ -10,8 +12,9 @@ using MailIsland.SettingsPage.SettingsViewModels;
 
 namespace MailIsland.SettingsPage.Views;
 
-/// <summary>邮件页。</summary>
-public partial class MailTabPage : UserControl
+/// <summary>邮件设置页。</summary>
+[SettingsPageInfo("mailisland.settings.mail", "邮件", "\uE8B7", "\uE8B7")]
+public partial class MailTabPage : SettingsPageBase
 {
     private readonly MailTabViewModel _vm;
 

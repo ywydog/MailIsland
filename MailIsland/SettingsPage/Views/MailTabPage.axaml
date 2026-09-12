@@ -1,12 +1,13 @@
-<UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:controls="clr-namespace:FluentAvalonia.UI.Controls;assembly=FluentAvalonia"
-             xmlns:conv="clr-namespace:MailIsland.Converters"
-             x:Class="MailIsland.SettingsPage.Views.MailTabPage">
+<ci:SettingsPageBase x:Class="MailIsland.SettingsPage.Views.MailTabPage"
+                     xmlns="https://github.com/avaloniaui"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                     xmlns:ci="http://classisland.tech/schemas/xaml/core"
+                     xmlns:controls="clr-namespace:FluentAvalonia.UI.Controls;assembly=FluentAvalonia"
+                     xmlns:conv="clr-namespace:MailIsland.Converters">
 
-    <UserControl.Resources>
+    <ci:SettingsPageBase.Resources>
         <conv:UnreadBoldConverter x:Key="UnreadBoldConverter" />
-    </UserControl.Resources>
+    </ci:SettingsPageBase.Resources>
 
     <Grid RowDefinitions="Auto,*">
         <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
@@ -71,4 +72,4 @@
             </Border>
         </Grid>
     </Grid>
-</UserControl>
+</ci:SettingsPageBase>

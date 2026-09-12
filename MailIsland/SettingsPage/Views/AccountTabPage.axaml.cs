@@ -1,6 +1,8 @@
 using System;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using ClassIsland.Core.Abstractions.Controls;
+using ClassIsland.Core.Attributes;
 using ClassIsland.Shared;
 using MailIsland.ConfigHandlers;
 using MailIsland.Logic.Presets;
@@ -9,8 +11,9 @@ using MailIsland.SettingsPage.SettingsViewModels;
 
 namespace MailIsland.SettingsPage.Views;
 
-/// <summary>账号页。</summary>
-public partial class AccountTabPage : UserControl
+/// <summary>账号设置页。</summary>
+[SettingsPageInfo("mailisland.settings.account", "账号", "\uE078", "\uE078")]
+public partial class AccountTabPage : SettingsPageBase
 {
     private readonly AccountTabViewModel _vm;
 

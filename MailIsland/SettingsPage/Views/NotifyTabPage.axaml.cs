@@ -1,5 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using ClassIsland.Core.Abstractions.Controls;
+using ClassIsland.Core.Attributes;
 using ClassIsland.Shared;
 using MailIsland.ConfigHandlers;
 using MailIsland.Logic.Config;
@@ -7,8 +9,9 @@ using MailIsland.SettingsPage.SettingsViewModels;
 
 namespace MailIsland.SettingsPage.Views;
 
-/// <summary>消息提醒页。</summary>
-public partial class NotifyTabPage : UserControl
+/// <summary>消息提醒设置页。</summary>
+[SettingsPageInfo("mailisland.settings.notify", "消息提醒", "\uE82E", "\uE82E")]
+public partial class NotifyTabPage : SettingsPageBase
 {
     private readonly NotifyTabViewModel _vm;
 
