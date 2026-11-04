@@ -5,9 +5,9 @@
                      xmlns:controls="clr-namespace:FluentAvalonia.UI.Controls;assembly=FluentAvalonia">
     <ScrollViewer>
         <StackPanel Classes="settings-container" Spacing="12">
-            <controls:SettingsExpander Header="账号列表"
+            <controls:FASettingsExpander Header="账号列表"
                                        Description="管理邮箱账户">
-                <controls:SettingsExpander.Footer>
+                <controls:FASettingsExpander.Footer>
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <Button x:Name="AddButton"
                                 Content="新增账号"
@@ -15,17 +15,17 @@
                         <Button x:Name="DeleteButton"
                                 Content="删除" />
                     </StackPanel>
-                </controls:SettingsExpander.Footer>
-            </controls:SettingsExpander>
+                </controls:FASettingsExpander.Footer>
+            </controls:FASettingsExpander>
 
             <ListBox x:Name="AccountList">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <controls:SettingsExpanderItem Content="{Binding DisplayName}">
-                            <controls:SettingsExpanderItem.Footer>
+                        <controls:FASettingsExpanderItem Content="{Binding DisplayName}">
+                            <controls:FASettingsExpanderItem.Footer>
                                 <ToggleSwitch IsChecked="{Binding Enabled, Mode=TwoWay}" />
-                            </controls:SettingsExpanderItem.Footer>
-                        </controls:SettingsExpanderItem>
+                            </controls:FASettingsExpanderItem.Footer>
+                        </controls:FASettingsExpanderItem>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>

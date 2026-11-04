@@ -11,7 +11,7 @@
 
     <ScrollViewer>
         <StackPanel Classes="settings-container" Spacing="12">
-            <controls:SettingsExpander Header="新邮件提醒"
+            <controls:FASettingsExpander Header="新邮件提醒"
                                        Description="通过 ClassIsland 提醒服务推送新邮件提醒">
                 <StackPanel Spacing="12">
                     <StackPanel Orientation="Horizontal" Spacing="8">
@@ -25,9 +25,9 @@
                                   MinWidth="140" />
                     </StackPanel>
                 </StackPanel>
-            </controls:SettingsExpander>
+            </controls:FASettingsExpander>
 
-            <controls:SettingsExpander Header="同步设置"
+            <controls:FASettingsExpander Header="同步设置"
                                        Description="收件轮询参数">
                 <StackPanel Orientation="Horizontal" Spacing="16">
                     <StackPanel Orientation="Horizontal" Spacing="6">
@@ -39,14 +39,14 @@
                         <NumericUpDown Minimum="1" Maximum="200" Value="{Binding MailCountLimit, Mode=TwoWay}" Width="100" />
                     </StackPanel>
                 </StackPanel>
-            </controls:SettingsExpander>
+            </controls:FASettingsExpander>
 
-            <controls:SettingsExpander Header="关键词提醒"
+            <controls:FASettingsExpander Header="关键词提醒"
                                        Description="新邮件在发件人/主题/正文命中关键词时提醒；未配置则默认全量提醒">
-                <controls:SettingsExpander.Footer>
+                <controls:FASettingsExpander.Footer>
                     <Button x:Name="AddKeywordButton" Content="添加关键词" Classes="accent" />
-                </controls:SettingsExpander.Footer>
-            </controls:SettingsExpander>
+                </controls:FASettingsExpander.Footer>
+            </controls:FASettingsExpander>
 
             <ItemsControl x:Name="KeywordList">
                 <ItemsControl.ItemTemplate>
