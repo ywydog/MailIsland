@@ -17,6 +17,7 @@ public partial class MailTabViewModel : ObservableObject
     private readonly IMailClientService _mail;
     private readonly MailCacheStore _cache;
     private readonly List<MailMessage> _allMails = new();
+    private readonly Dictionary<string, byte[]?> _inlineImageCache = new(StringComparer.OrdinalIgnoreCase);
 
     private CancellationTokenSource? _loadCts;
 
@@ -62,6 +63,7 @@ public partial class MailTabViewModel : ObservableObject
         Attachments.Clear();
         Messages.Clear();
         _allMails.Clear();
+        _inlineImageCache.Clear();
         HasSavedAttachment = false;
         LastSavedFilePath = null;
 
@@ -89,9 +91,40 @@ public partial class MailTabViewModel : ObservableObject
         if (SelectedMessage is { } mail)
         {
             var body = mail.HasHtml ? mail.HtmlBody : null;
-            BodyContent = HtmlToAvaloniaRenderer.Build(body, mail.TextBody, value);
+            BodyContent = HtmlToAvaloniaRenderer.Build(
+                body, mail.TextBody, value, CreateInlineResolver(mail));
         }
     }
+
+    /// <summary>按需下载并缓存正文内嵌图片（cid: 引用）。</summary>
+    private async Task<byte[]?> LoadInlineImageAsync(MailMessage mail, string contentId)
+    {
+        var normalized = MimeContentId.Normalize(contentId);
+        if (!mail.InlineParts.TryGetValue(normalized, out var partSpecifier)) return null;
+        if (_inlineImageCache.TryGetValue(partSpecifier, out var cached)) return cached;
+
+        if (SelectedAccount is not { } acc) return null;
+        if (string.IsNullOrWhiteSpace(acc.EncryptedPassword)) return null;
+
+        try
+        {
+            var plainPassword = _config.Protector.Decrypt(acc.EncryptedPassword);
+            var bytes = await _mail.DownloadAttachmentAsync(
+                acc, plainPassword, mail.Uid, partSpecifier, CancellationToken.None);
+
+            _inlineImageCache[partSpecifier] = bytes;
+            return bytes;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private InlineImageResolver? CreateInlineResolver(MailMessage mail) =>
+        mail.InlineParts.Count == 0
+            ? null
+            : new InlineImageResolver(mail.InlineParts, cid => LoadInlineImageAsync(mail, cid));
 
     /// <summary>下载附件到桌面（重名自动追加序号）。</summary>
     public async Task DownloadAttachmentAsync(MailAttachmentInfo attachment, CancellationToken ct = default)
@@ -253,6 +286,7 @@ public partial class MailTabViewModel : ObservableObject
     {
         BodyContent = null;
         Attachments.Clear();
+        _inlineImageCache.Clear();
         if (value == null) return;
 
         foreach (var attachment in value.Attachments)
@@ -261,6 +295,7 @@ public partial class MailTabViewModel : ObservableObject
         }
 
         var body = value.HasHtml ? value.HtmlBody : null;
-        BodyContent = HtmlToAvaloniaRenderer.Build(body, value.TextBody, LoadBodyImages);
+        BodyContent = HtmlToAvaloniaRenderer.Build(
+            body, value.TextBody, LoadBodyImages, CreateInlineResolver(value));
     }
 }

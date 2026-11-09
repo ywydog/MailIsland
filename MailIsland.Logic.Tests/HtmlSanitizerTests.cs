@@ -45,6 +45,20 @@ public class HtmlSanitizerTests
     }
 
     [Fact]
+    public void PreservesCidImageSource()
+    {
+        var clean = HtmlSanitizer.Sanitize("<img src=\"cid:image001@abc\" />");
+        Assert.Contains("cid:image001@abc", clean);
+    }
+
+    [Fact]
+    public void RemovesDataImageSource()
+    {
+        var clean = HtmlSanitizer.Sanitize("<img src=\"data:image/png;base64,AAAA\" />");
+        Assert.DoesNotContain("data:", clean);
+    }
+
+    [Fact]
     public void ToPlainText_RemovesTagsAndScripts()
     {
         var html = "<p>你好 <b>世界</b></p><script>alert(1)</script><style>.x{}</style>";

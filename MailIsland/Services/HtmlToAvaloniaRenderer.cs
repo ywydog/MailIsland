@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Media;
+using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using HtmlAgilityPack;
 using MailIsland.Logic.Html;
@@ -19,7 +20,11 @@ public static class HtmlToAvaloniaRenderer
     private const int MaxImagesPerMail = 20;
 
     /// <summary>构建邮件正文展示面板（无正文时返回提示文本）。</summary>
-    public static Control Build(string? html, string? fallbackPlainText = null, bool loadRemoteImages = false)
+    public static Control Build(
+        string? html,
+        string? fallbackPlainText = null,
+        bool loadRemoteImages = false,
+        InlineImageResolver? inlineResolver = null)
     {
         var clean = HtmlSanitizer.Sanitize(html);
 
@@ -45,22 +50,23 @@ public static class HtmlToAvaloniaRenderer
         var imageBudget = MaxImagesPerMail;
         foreach (var node in nodes.Where(n => n.NodeType == HtmlNodeType.Element))
         {
-            panel.Children.Add(BuildBlock(node, loadRemoteImages, ref imageBudget));
+            panel.Children.Add(BuildBlock(node, loadRemoteImages, ref imageBudget, inlineResolver));
         }
         return panel;
     }
 
-    private static Control BuildBlock(HtmlNode node, bool loadImages, ref int imageBudget)
+    private static Control BuildBlock(
+        HtmlNode node, bool loadImages, ref int imageBudget, InlineImageResolver? inlineResolver)
     {
         if (loadImages && node.Name.Equals("img", StringComparison.OrdinalIgnoreCase))
         {
-            return TryCreateImage(node, ref imageBudget) ?? MakeText("", 14);
+            return TryCreateImage(node, ref imageBudget, inlineResolver) ?? MakeText("", 14);
         }
 
         if (loadImages && HasImage(node))
         {
             var stack = new StackPanel { Spacing = 6 };
-            RenderInline(node, stack, fontSize: 14, ref imageBudget);
+            RenderInline(node, stack, fontSize: 14, ref imageBudget, inlineResolver);
             if (stack.Children.Count == 0)
             {
                 stack.Children.Add(MakeText(GetNodeText(node), 14));
@@ -79,7 +85,8 @@ public static class HtmlToAvaloniaRenderer
     }
 
     /// <summary>按文档顺序输出文本与图片，块级元素之间换行。</summary>
-    private static void RenderInline(HtmlNode node, StackPanel panel, double fontSize, ref int imageBudget)
+    private static void RenderInline(
+        HtmlNode node, StackPanel panel, double fontSize, ref int imageBudget, InlineImageResolver? inlineResolver)
     {
         var buffer = new StringBuilder();
 
@@ -111,7 +118,7 @@ public static class HtmlToAvaloniaRenderer
             if (name == "img")
             {
                 Flush();
-                var image = TryCreateImage(child, ref imageBudget);
+                var image = TryCreateImage(child, ref imageBudget, inlineResolver);
                 if (image != null) panel.Children.Add(image);
                 continue;
             }
@@ -119,27 +126,50 @@ public static class HtmlToAvaloniaRenderer
             if (name is "p" or "div" or "li" or "tr" or "table" or "blockquote" or "h1" or "h2" or "h3" or "h4")
             {
                 Flush();
-                RenderInline(child, panel, fontSize, ref imageBudget);
+                RenderInline(child, panel, fontSize, ref imageBudget, inlineResolver);
                 Flush();
                 continue;
             }
 
-            RenderInline(child, panel, fontSize, ref imageBudget);
+            RenderInline(child, panel, fontSize, ref imageBudget, inlineResolver);
         }
 
         Flush();
     }
 
-    private static Control? TryCreateImage(HtmlNode node, ref int imageBudget)
+    private static Control? TryCreateImage(HtmlNode node, ref int imageBudget, InlineImageResolver? inlineResolver)
     {
         if (imageBudget <= 0) return null;
 
         var src = node.GetAttributeValue("src", "").Trim();
+        var alt = node.GetAttributeValue("alt", "");
+
+        // 正文内嵌图片：cid: 引用通过 MIME 部件按需下载
+        if (src.StartsWith("cid:", StringComparison.OrdinalIgnoreCase))
+        {
+            if (inlineResolver == null) return null;
+
+            var contentId = src[4..];
+            if (!inlineResolver.Contains(contentId)) return null;
+
+            imageBudget--;
+            var inlineImage = CreateImage(alt);
+            _ = LoadInlineImageAsync(inlineImage, contentId, inlineResolver);
+            return inlineImage;
+        }
+
         if (!Uri.TryCreate(src, UriKind.Absolute, out var uri)) return null;
         if (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps) return null;
 
         imageBudget--;
 
+        var image = CreateImage(alt);
+        _ = LoadImageAsync(image, uri);
+        return image;
+    }
+
+    private static Image CreateImage(string alt)
+    {
         var image = new Image
         {
             MaxWidth = 520,
@@ -147,10 +177,7 @@ public static class HtmlToAvaloniaRenderer
             HorizontalAlignment = HorizontalAlignment.Left,
         };
 
-        var alt = node.GetAttributeValue("alt", "");
         if (!string.IsNullOrWhiteSpace(alt)) ToolTip.SetTip(image, alt);
-
-        _ = LoadImageAsync(image, uri);
         return image;
     }
 
@@ -160,6 +187,23 @@ public static class HtmlToAvaloniaRenderer
         if (bitmap == null) return;
 
         await Dispatcher.UIThread.InvokeAsync(() => image.Source = bitmap);
+    }
+
+    private static async Task LoadInlineImageAsync(Image image, string contentId, InlineImageResolver resolver)
+    {
+        try
+        {
+            var bytes = await resolver.LoadAsync(contentId).ConfigureAwait(false);
+            if (bytes is not { Length: > 0 }) return;
+
+            using var stream = new MemoryStream(bytes);
+            var bitmap = new Bitmap(stream);
+            await Dispatcher.UIThread.InvokeAsync(() => image.Source = bitmap);
+        }
+        catch
+        {
+            // 单个内嵌图片失败不影响正文
+        }
     }
 
     private static bool HasImage(HtmlNode node) =>

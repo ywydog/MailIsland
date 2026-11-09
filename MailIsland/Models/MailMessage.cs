@@ -17,6 +17,8 @@ public sealed class MailMessage
     public bool HasAttachment { get; set; }
     /// <summary>附件元数据列表。</summary>
     public List<MailAttachmentInfo> Attachments { get; set; } = new();
+    /// <summary>正文内嵌图片：Content-ID（已规范化）→ MIME 部件路径。</summary>
+    public Dictionary<string, string> InlineParts { get; set; } = new();
 
     /// <summary>发件人显示文本：优先姓名，其次邮箱地址。</summary>
     [JsonIgnore]

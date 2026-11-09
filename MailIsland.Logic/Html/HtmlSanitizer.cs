@@ -11,10 +11,10 @@ public static class HtmlSanitizer
         "http", "https", "mailto",
     };
 
-    /// <summary>src 白名单：仅允许 http/https。不放行 data:，避免任意内联图片（追踪像素/隐私）随正文加载。</summary>
+    /// <summary>src 白名单：仅允许 http/https 与 cid（正文内嵌图片）。不放行 data:，避免任意内联内容随正文加载。</summary>
     private static readonly HashSet<string> AllowedSrcSchemes = new(StringComparer.OrdinalIgnoreCase)
     {
-        "http", "https",
+        "http", "https", "cid",
     };
 
     public static string Sanitize(string? html)

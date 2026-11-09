@@ -164,6 +164,7 @@ public sealed class MailClientService : IMailClientService
         if (string.IsNullOrWhiteSpace(subject)) subject = "(无主题)";
 
         var attachments = BuildAttachmentInfos(summary);
+        var inlineParts = BuildInlineParts(summary);
 
         return new MailMessage
         {
@@ -175,7 +176,47 @@ public sealed class MailClientService : IMailClientService
             IsUnread = !(summary.Flags?.HasFlag(MessageFlags.Seen) ?? false),
             HasAttachment = attachments.Count > 0,
             Attachments = attachments,
+            InlineParts = inlineParts,
         };
+    }
+
+    /// <summary>收集正文内嵌图片（带 Content-ID 的 image/* 部件），供 cid: 引用解析。</summary>
+    private static Dictionary<string, string> BuildInlineParts(IMessageSummary summary)
+    {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (summary.Body == null) return result;
+
+        foreach (var part in EnumerateParts(summary.Body))
+        {
+            if (part is not BodyPartBasic basic) continue;
+            if (string.IsNullOrWhiteSpace(basic.ContentId)) continue;
+            if (!basic.ContentType.MimeType.StartsWith("image/", StringComparison.OrdinalIgnoreCase)) continue;
+
+            var contentId = MimeContentId.Normalize(basic.ContentId);
+            if (contentId.Length == 0) continue;
+
+            result[contentId] = basic.PartSpecifier;
+        }
+
+        return result;
+    }
+
+    private static IEnumerable<BodyPart> EnumerateParts(BodyPart part)
+    {
+        yield return part;
+
+        switch (part)
+        {
+            case BodyPartMultipart multipart:
+                foreach (var child in multipart.BodyParts)
+                {
+                    foreach (var nested in EnumerateParts(child)) yield return nested;
+                }
+                break;
+            case BodyPartMessage message when message.Body != null:
+                foreach (var nested in EnumerateParts(message.Body)) yield return nested;
+                break;
+        }
     }
 
     /// <summary>从 BODYSTRUCTURE 提取附件元数据，下载时再按 PartSpecifier 拉取内容。</summary>
