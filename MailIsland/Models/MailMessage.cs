@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace MailIsland.Models;
 
 /// <summary>邮件消息模型。</summary>
@@ -15,4 +17,18 @@ public sealed class MailMessage
     public bool HasAttachment { get; set; }
     /// <summary>附件元数据列表。</summary>
     public List<MailAttachmentInfo> Attachments { get; set; } = new();
+
+    /// <summary>发件人显示文本：优先姓名，其次邮箱地址。</summary>
+    [JsonIgnore]
+    public string SenderDisplay => !string.IsNullOrWhiteSpace(SenderName)
+        ? SenderName
+        : SenderEmail;
+
+    /// <summary>主题显示文本（空主题给出占位）。</summary>
+    [JsonIgnore]
+    public string SubjectDisplay => string.IsNullOrWhiteSpace(Subject) ? "(无主题)" : Subject;
+
+    /// <summary>本地时间文本，供列表展示。</summary>
+    [JsonIgnore]
+    public string DateDisplay => Date == default ? "" : Date.ToLocalTime().ToString("MM-dd HH:mm");
 }

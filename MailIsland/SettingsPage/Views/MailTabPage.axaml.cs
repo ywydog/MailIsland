@@ -58,19 +58,45 @@ public partial class MailTabPage : SettingsPageBase
 
     private void OnMessageSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        if (MessageList.SelectedItem is MailMessage msg)
+        if (MessageList.SelectedItem is not MailMessage msg)
         {
-            _vm.SelectedMessage = msg;
-            DetailSubject.Text = msg.Subject;
-            DetailFrom.Text = string.IsNullOrWhiteSpace(msg.SenderEmail)
-                ? $"发件人：{msg.SenderName}"
-                : $"发件人：{msg.SenderName} <{msg.SenderEmail}>";
-            DetailDate.Text = msg.Date == default
-                ? "时间：未知"
-                : $"时间：{msg.Date.ToLocalTime():yyyy-MM-dd HH:mm}";
-            BodyHost.Content = _vm.BodyContent;
-            AttachmentHeader.IsVisible = _vm.Attachments.Count > 0;
+            ShowEmptyDetail();
+            return;
         }
+
+        _vm.SelectedMessage = msg;
+
+        DetailSubject.Text = msg.SubjectDisplay;
+
+        var from = string.IsNullOrWhiteSpace(msg.SenderEmail)
+            ? msg.SenderDisplay
+            : string.IsNullOrWhiteSpace(msg.SenderName)
+                ? msg.SenderEmail
+                : $"{msg.SenderName} <{msg.SenderEmail}>";
+        DetailFrom.Text = $"发件人：{from}";
+        DetailDate.Text = msg.Date == default
+            ? "时间：未知"
+            : $"时间：{msg.Date.ToLocalTime():yyyy-MM-dd HH:mm}";
+
+        BodyHost.Content = _vm.BodyContent;
+        AttachmentHeader.IsVisible = _vm.Attachments.Count > 0;
+
+        DetailContent.IsVisible = true;
+        DetailHint.IsVisible = false;
+    }
+
+    private void ShowEmptyDetail()
+    {
+        _vm.SelectedMessage = null;
+
+        DetailSubject.Text = "";
+        DetailFrom.Text = "";
+        DetailDate.Text = "";
+        BodyHost.Content = null;
+        AttachmentHeader.IsVisible = false;
+
+        DetailContent.IsVisible = false;
+        DetailHint.IsVisible = true;
     }
 
     private async void OnDownloadAttachmentClick(object? sender, RoutedEventArgs e)

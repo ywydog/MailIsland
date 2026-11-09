@@ -36,6 +36,11 @@ public partial class MailTabViewModel : ObservableObject
             config.Data.Accounts.Where(a => a.Enabled).ToList());
         Messages = new ObservableCollection<MailMessage>();
         Attachments = new ObservableCollection<MailAttachmentInfo>();
+
+        if (Accounts.Count == 0)
+        {
+            Status = "还没有可用的邮箱账号，请先到“账号”页添加并填写授权码。";
+        }
     }
 
     public IReadOnlyList<MailAccountSettings> Accounts { get; }
@@ -47,10 +52,18 @@ public partial class MailTabViewModel : ObservableObject
         SelectedMessage = null;
         BodyContent = null;
         Attachments.Clear();
+        Messages.Clear();
 
         // 切换账号时取消上一个账号尚未完成的加载，避免结果串号
         _loadCts?.Cancel();
-        if (value != null) _ = LoadAsync();
+
+        if (value == null)
+        {
+            Status = "请选择一个收件账号。";
+            return;
+        }
+
+        _ = LoadAsync();
     }
 
     /// <summary>下载附件到桌面（重名自动追加序号）。</summary>
@@ -78,7 +91,7 @@ public partial class MailTabViewModel : ObservableObject
             var path = AttachmentStorage.BuildTargetPath(directory, attachment.FileName);
             await File.WriteAllBytesAsync(path, bytes, ct);
 
-            Status = $"已保存到 {path}";
+            Status = $"已保存到桌面：{Path.GetFileName(path)}";
         }
         catch (OperationCanceledException)
         {
@@ -117,7 +130,7 @@ public partial class MailTabViewModel : ObservableObject
             if (cts.IsCancellationRequested || SelectedAccount?.Id != accountId) return;
 
             Fill(list);
-            Status = $"共 {Messages.Count} 封邮件";
+            Status = list.Count == 0 ? "该账号暂无邮件。" : $"共 {Messages.Count} 封邮件";
             await _cache.SaveAsync(accountId, list, cts.Token);
         }
         catch (OperationCanceledException)
