@@ -20,6 +20,16 @@ public sealed class MailIslandConfigData
     public List<KeywordRule> KeywordRules { get; set; } = new();
     /// <summary>提醒正文层显示内容：发件人还是邮件正文。</summary>
     public OverlayContentKind OverlayContentKind { get; set; } = OverlayContentKind.Sender;
+    /// <summary>提醒遮罩（标题）显示内容。</summary>
+    public NotificationMaskKind MaskContentKind { get; set; } = NotificationMaskKind.AccountName;
+    /// <summary>提醒正文层显示方式。</summary>
+    public NotificationDisplayMode DisplayMode { get; set; } = NotificationDisplayMode.Auto;
+    /// <summary>静态显示时长（秒）。</summary>
+    public int StaticDisplaySeconds { get; set; } = 8;
+    /// <summary>滚动速度（字符/秒）。</summary>
+    public int ScrollCharsPerSecond { get; set; } = 8;
+    /// <summary>是否语音朗读提醒内容（默认关闭，避免泄露邮件内容）。</summary>
+    public bool NotificationSpeechEnabled { get; set; }
 }
 
 /// <summary>账号设置。</summary>

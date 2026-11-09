@@ -15,6 +15,11 @@ public partial class NotifyTabViewModel : ObservableObject
     [ObservableProperty] private int _pollIntervalMinutes;
     [ObservableProperty] private int _mailCountLimit;
     [ObservableProperty] private OverlayContentKind _overlayContentKind;
+    [ObservableProperty] private NotificationMaskKind _maskContentKind;
+    [ObservableProperty] private NotificationDisplayMode _displayMode;
+    [ObservableProperty] private int _staticDisplaySeconds;
+    [ObservableProperty] private int _scrollCharsPerSecond;
+    [ObservableProperty] private bool _notificationSpeechEnabled;
     [ObservableProperty] private string _status = "";
 
     public NotifyTabViewModel(MailIslandConfigHandler config)
@@ -26,6 +31,11 @@ public partial class NotifyTabViewModel : ObservableObject
         _pollIntervalMinutes = config.Data.PollIntervalMinutes;
         _mailCountLimit = config.Data.MailCountLimit;
         _overlayContentKind = config.Data.OverlayContentKind;
+        _maskContentKind = config.Data.MaskContentKind;
+        _displayMode = config.Data.DisplayMode;
+        _staticDisplaySeconds = config.Data.StaticDisplaySeconds;
+        _scrollCharsPerSecond = config.Data.ScrollCharsPerSecond;
+        _notificationSpeechEnabled = config.Data.NotificationSpeechEnabled;
     }
 
     public ObservableCollection<KeywordRule> Keywords { get; }
@@ -33,7 +43,13 @@ public partial class NotifyTabViewModel : ObservableObject
     public Array MatchScopes => Enum.GetValues(typeof(KeywordMatchScope));
 
     /// <summary>正文层显示选项的中文名，顺序与 <see cref="OverlayContentKind"/> 一致。</summary>
-    public string[] OverlayContentKindNames => ["发件人 + 主题", "邮件正文"];
+    public string[] OverlayContentKindNames => ["发件人 + 主题", "邮件正文", "仅主题", "仅发件人"];
+
+    /// <summary>遮罩显示选项的中文名，顺序与 <see cref="NotificationMaskKind"/> 一致。</summary>
+    public string[] MaskContentKindNames => ["账号名 + 新邮件", "邮件主题", "发件人"];
+
+    /// <summary>显示方式选项的中文名，顺序与 <see cref="NotificationDisplayMode"/> 一致。</summary>
+    public string[] DisplayModeNames => ["自动（长文本滚动）", "始终静态", "始终滚动"];
 
     partial void OnNotifyEnabledChanged(bool value) { _config.Data.NotifyEnabled = value; _config.Save(); }
 
@@ -54,6 +70,38 @@ public partial class NotifyTabViewModel : ObservableObject
     partial void OnOverlayContentKindChanged(OverlayContentKind value)
     {
         _config.Data.OverlayContentKind = value;
+        _config.Save();
+    }
+
+    partial void OnMaskContentKindChanged(NotificationMaskKind value)
+    {
+        _config.Data.MaskContentKind = value;
+        _config.Save();
+    }
+
+    partial void OnDisplayModeChanged(NotificationDisplayMode value)
+    {
+        _config.Data.DisplayMode = value;
+        _config.Save();
+    }
+
+    partial void OnStaticDisplaySecondsChanged(int value)
+    {
+        var clamped = Math.Clamp(value, 3, 120);
+        _config.Data.StaticDisplaySeconds = clamped;
+        _config.Save();
+    }
+
+    partial void OnScrollCharsPerSecondChanged(int value)
+    {
+        var clamped = Math.Clamp(value, 1, 100);
+        _config.Data.ScrollCharsPerSecond = clamped;
+        _config.Save();
+    }
+
+    partial void OnNotificationSpeechEnabledChanged(bool value)
+    {
+        _config.Data.NotificationSpeechEnabled = value;
         _config.Save();
     }
 

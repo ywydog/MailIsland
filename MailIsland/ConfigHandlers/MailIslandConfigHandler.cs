@@ -67,6 +67,11 @@ public sealed class MailIslandConfigHandler
         MailCountLimit = Data.MailCountLimit,
         NotifyEnabled = Data.NotifyEnabled,
         OverlayContentKind = Data.OverlayContentKind,
+        MaskContentKind = Data.MaskContentKind,
+        DisplayMode = Data.DisplayMode,
+        StaticDisplaySeconds = Data.StaticDisplaySeconds,
+        ScrollCharsPerSecond = Data.ScrollCharsPerSecond,
+        NotificationSpeechEnabled = Data.NotificationSpeechEnabled,
         Accounts = Data.Accounts.Select(a => new MailAccountSettings
         {
             Id = a.Id,

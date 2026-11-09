@@ -20,23 +20,26 @@ namespace MailIsland.Services;
     "通过邮箱插件拉取新邮件，命中关键词时推送提醒。")]
 public sealed class MailNotificationProvider : NotificationProviderBase
 {
-    /// <summary>不超过该长度时直接静态显示，超过则滚动显示。</summary>
-    private const int SimpleTextThreshold = 28;
+    /// <summary>自动模式下，不超过该长度时静态显示。</summary>
+    private const int AutoScrollThreshold = 28;
 
-    /// <summary>正文层文本的最大长度（滚动展示，避免过长占用过多时间）。</summary>
+    /// <summary>正文层文本的最大长度，避免滚动展示时间过长。</summary>
     private const int MaxOverlayLength = 240;
 
     /// <summary>推送新邮件提醒。</summary>
-    public void Notify(MailMessage mail, MailAccountSettings account, OverlayContentKind overlayKind, bool keywordHit, string? keyword = null)
+    public void Notify(
+        MailMessage mail,
+        MailAccountSettings account,
+        MailIslandConfigData config,
+        bool keywordHit,
+        string? keyword = null)
     {
-        var title = keywordHit && !string.IsNullOrEmpty(keyword)
-            ? $"【{keyword}】{account.DisplayName} 新邮件"
-            : $"{account.DisplayName} 新邮件";
+        var mask = NotificationContent.CreateSimpleTextContent(BuildMaskTitle(mail, account, config.MaskContentKind, keywordHit, keyword));
+        mask.IsSpeechEnabled = config.NotificationSpeechEnabled;
 
-        var body = BuildOverlayBody(mail, overlayKind);
-
-        var mask = NotificationContent.CreateSimpleTextContent(title);
-        var overlay = BuildOverlayContent(body);
+        var body = BuildOverlayBody(mail, config.OverlayContentKind);
+        var overlay = BuildOverlayContent(body, config);
+        overlay.IsSpeechEnabled = config.NotificationSpeechEnabled;
 
         var request = new NotificationRequest
         {
@@ -47,40 +50,78 @@ public sealed class MailNotificationProvider : NotificationProviderBase
         ShowNotification(request);
     }
 
-    /// <summary>短文本直接显示，长文本使用宿主内置的滚动文本模板横向滚动。</summary>
-    private static NotificationContent BuildOverlayContent(string body)
+    /// <summary>构建遮罩（标题）文本。</summary>
+    private static string BuildMaskTitle(
+        MailMessage mail,
+        MailAccountSettings account,
+        NotificationMaskKind maskKind,
+        bool keywordHit,
+        string? keyword)
     {
-        if (body.Length <= SimpleTextThreshold)
+        var content = maskKind switch
         {
-            var simple = NotificationContent.CreateSimpleTextContent(body);
-            simple.IsSpeechEnabled = false;
-            simple.Duration = TimeSpan.FromSeconds(8);
-            return simple;
+            NotificationMaskKind.Subject => string.IsNullOrWhiteSpace(mail.Subject) ? account.DisplayName : mail.Subject,
+            NotificationMaskKind.Sender => GetSenderText(mail, account),
+            _ => $"{account.DisplayName} 新邮件",
+        };
+
+        return keywordHit && !string.IsNullOrEmpty(keyword)
+            ? $"【{keyword}】{content}"
+            : content;
+    }
+
+    /// <summary>短文本静态显示，长文本按用户选择滚动显示。</summary>
+    private static NotificationContent BuildOverlayContent(string body, MailIslandConfigData config)
+    {
+        var useScroll = config.DisplayMode switch
+        {
+            NotificationDisplayMode.Static => false,
+            NotificationDisplayMode.Scroll => true,
+            _ => body.Length > AutoScrollThreshold,
+        };
+
+        if (!useScroll)
+        {
+            var content = NotificationContent.CreateSimpleTextContent(body);
+            content.Duration = TimeSpan.FromSeconds(Math.Clamp(config.StaticDisplaySeconds, 3, 120));
+            return content;
         }
 
-        // 滚动模板为单行，正好适配正文层约 40px 的高度；
-        // 按每秒约 8 个字符估算时长，并限制在 8~30 秒。
-        var seconds = Math.Clamp(body.Length / 8.0, 8, 30);
+        var charsPerSecond = Math.Clamp(config.ScrollCharsPerSecond, 1, 100);
+        var seconds = Math.Clamp(body.Length / (double)charsPerSecond, 5, 60);
         return NotificationContent.CreateRollingTextContent(
-            body, TimeSpan.FromSeconds(seconds), repeatCount: 1,
-            content => content.IsSpeechEnabled = false);
+            body, TimeSpan.FromSeconds(seconds), repeatCount: 1);
     }
 
     /// <summary>根据用户设置构建正文层文本（单行，超长截断）。</summary>
     private static string BuildOverlayBody(MailMessage mail, OverlayContentKind overlayKind)
     {
-        // 选择邮件正文且正文不为空时显示正文摘要
-        if (overlayKind == OverlayContentKind.Body && !string.IsNullOrWhiteSpace(mail.TextBody))
+        var sender = GetSenderText(mail, account: null);
+        var subject = mail.Subject;
+
+        var text = overlayKind switch
         {
-            return ToSingleLine(mail.TextBody);
+            OverlayContentKind.Subject => subject,
+            OverlayContentKind.SenderOnly => sender,
+            OverlayContentKind.Body when !string.IsNullOrWhiteSpace(mail.TextBody) => mail.TextBody,
+            _ => string.IsNullOrWhiteSpace(subject) ? sender : $"{sender} · {subject}",
+        };
+
+        return ToSingleLine(text);
+    }
+
+    /// <summary>发件人展示文本；无账号信息时回退到邮箱地址。</summary>
+    private static string GetSenderText(MailMessage mail, MailAccountSettings? account)
+    {
+        if (!string.IsNullOrWhiteSpace(mail.SenderName))
+        {
+            return string.IsNullOrWhiteSpace(mail.SenderEmail)
+                ? mail.SenderName
+                : $"{mail.SenderName} <{mail.SenderEmail}>";
         }
 
-        var sender = string.IsNullOrWhiteSpace(mail.SenderName)
-            ? mail.SenderEmail
-            : $"{mail.SenderName} <{mail.SenderEmail}>";
-        return ToSingleLine(string.IsNullOrWhiteSpace(mail.Subject)
-            ? sender
-            : $"{sender} · {mail.Subject}");
+        if (!string.IsNullOrWhiteSpace(mail.SenderEmail)) return mail.SenderEmail;
+        return account?.DisplayName ?? "";
     }
 
     /// <summary>把任意文本压成单行并截断，避免正文层出现换行或被裁切。</summary>

@@ -19,6 +19,24 @@ public enum PresetKind
 /// <summary>提醒正文层显示的内容。</summary>
 public enum OverlayContentKind
 {
-    Sender,   // 发件人 + 主题
-    Body,     // 邮件正文
+    Sender,      // 发件人 + 主题（旧配置沿用）
+    Body,        // 邮件正文
+    Subject,     // 仅主题
+    SenderOnly,  // 仅发件人
+}
+
+/// <summary>提醒遮罩（标题）显示的内容。</summary>
+public enum NotificationMaskKind
+{
+    AccountName,  // 账号名 + 新邮件
+    Subject,      // 邮件主题
+    Sender,       // 发件人
+}
+
+/// <summary>提醒正文层的显示方式。</summary>
+public enum NotificationDisplayMode
+{
+    Auto,    // 短文本静态、长文本滚动
+    Static,  // 始终静态显示（超长省略）
+    Scroll,  // 始终滚动显示
 }

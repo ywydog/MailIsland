@@ -19,10 +19,42 @@
                         <ToggleSwitch IsChecked="{Binding NotifyEnabled, Mode=TwoWay}" />
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="遮罩标题" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <ComboBox ItemsSource="{Binding MaskContentKindNames}"
+                                  SelectedIndex="{Binding MaskContentKind, Mode=TwoWay, Converter={StaticResource EnumIndexConverter}}"
+                                  MinWidth="140" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
                         <TextBlock Text="正文层显示" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                         <ComboBox ItemsSource="{Binding OverlayContentKindNames}"
                                   SelectedIndex="{Binding OverlayContentKind, Mode=TwoWay, Converter={StaticResource EnumIndexConverter}}"
                                   MinWidth="140" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="显示方式" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <ComboBox ItemsSource="{Binding DisplayModeNames}"
+                                  SelectedIndex="{Binding DisplayMode, Mode=TwoWay, Converter={StaticResource EnumIndexConverter}}"
+                                  MinWidth="160" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="语音朗读" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <ToggleSwitch IsChecked="{Binding NotificationSpeechEnabled, Mode=TwoWay}" />
+                        <TextBlock Text="（默认关闭，避免朗读邮件内容）" VerticalAlignment="Center"
+                                   FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                    </StackPanel>
+                </StackPanel>
+            </controls:FASettingsExpander>
+
+            <controls:FASettingsExpander Header="显示参数"
+                                       Description="静态显示时长与滚动速度">
+                <StackPanel Orientation="Horizontal" Spacing="16">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="静态时长（秒）" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <NumericUpDown Minimum="3" Maximum="120" Value="{Binding StaticDisplaySeconds, Mode=TwoWay}" Width="110" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="滚动速度（字/秒）" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <NumericUpDown Minimum="1" Maximum="100" Value="{Binding ScrollCharsPerSecond, Mode=TwoWay}" Width="110" />
                     </StackPanel>
                 </StackPanel>
             </controls:FASettingsExpander>
