@@ -146,6 +146,9 @@ public sealed class MailClientService : IMailClientService
 
     private async Task ConnectAsync(ImapClient client, MailAccountSettings account, string plainPassword, CancellationToken ct)
     {
+        // 默认 120 秒过长，单个账号卡住会阻塞整轮同步
+        client.Timeout = 30_000;
+
         await client.ConnectAsync(account.ImapServer, account.ImapPort,
             account.ImapUseSsl ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls, ct);
         await client.AuthenticateAsync(account.Email, plainPassword, ct);

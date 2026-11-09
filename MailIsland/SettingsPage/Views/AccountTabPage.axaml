@@ -62,7 +62,7 @@
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" Spacing="10">
-                        <TextBlock Text="授权码" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBlock Text="授权码/客户端密码" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                         <TextBox x:Name="PasswordBox" PasswordChar="●" MinWidth="240" />
                     </StackPanel>
 
