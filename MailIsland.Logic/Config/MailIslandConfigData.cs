@@ -30,6 +30,8 @@ public sealed class MailIslandConfigData
     public int ScrollCharsPerSecond { get; set; } = 8;
     /// <summary>是否语音朗读提醒内容（默认关闭，避免泄露邮件内容）。</summary>
     public bool NotificationSpeechEnabled { get; set; }
+    /// <summary>是否在正文中加载远程图片（默认关闭，避免跟踪像素）。</summary>
+    public bool LoadBodyImages { get; set; }
 }
 
 /// <summary>账号设置。</summary>

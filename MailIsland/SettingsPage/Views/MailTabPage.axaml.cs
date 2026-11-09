@@ -106,4 +106,6 @@ public partial class MailTabPage : SettingsPageBase
             await _vm.DownloadAttachmentAsync(attachment);
         }
     }
+
+    private void OnOpenFolderClick(object? sender, RoutedEventArgs e) => _vm.OpenContainingFolder();
 }

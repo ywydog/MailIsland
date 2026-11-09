@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using MailIsland.ConfigHandlers;
@@ -15,6 +16,7 @@ public partial class MailTabViewModel : ObservableObject
     private readonly MailIslandConfigHandler _config;
     private readonly IMailClientService _mail;
     private readonly MailCacheStore _cache;
+    private readonly List<MailMessage> _allMails = new();
 
     private CancellationTokenSource? _loadCts;
 
@@ -23,6 +25,10 @@ public partial class MailTabViewModel : ObservableObject
     [ObservableProperty] private string _status = "";
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private Control? _bodyContent;
+    [ObservableProperty] private string _searchText = "";
+    [ObservableProperty] private bool _loadBodyImages;
+    [ObservableProperty] private string? _lastSavedFilePath;
+    [ObservableProperty] private bool _hasSavedAttachment;
 
     public MailTabViewModel(
         MailIslandConfigHandler config,
@@ -32,6 +38,8 @@ public partial class MailTabViewModel : ObservableObject
         _config = config;
         _mail = mail;
         _cache = cache;
+        _loadBodyImages = config.Data.LoadBodyImages;
+
         Accounts = new ReadOnlyCollection<MailAccountSettings>(
             config.Data.Accounts.Where(a => a.Enabled).ToList());
         Messages = new ObservableCollection<MailMessage>();
@@ -53,6 +61,9 @@ public partial class MailTabViewModel : ObservableObject
         BodyContent = null;
         Attachments.Clear();
         Messages.Clear();
+        _allMails.Clear();
+        HasSavedAttachment = false;
+        LastSavedFilePath = null;
 
         // 切换账号时取消上一个账号尚未完成的加载，避免结果串号
         _loadCts?.Cancel();
@@ -64,6 +75,22 @@ public partial class MailTabViewModel : ObservableObject
         }
 
         _ = LoadAsync();
+    }
+
+    /// <summary>按发件人、主题或正文过滤当前邮件列表。</summary>
+    partial void OnSearchTextChanged(string value) => ApplyFilter();
+
+    /// <summary>切换正文图片加载开关并重建当前正文。</summary>
+    partial void OnLoadBodyImagesChanged(bool value)
+    {
+        _config.Data.LoadBodyImages = value;
+        _config.Save();
+
+        if (SelectedMessage is { } mail)
+        {
+            var body = mail.HasHtml ? mail.HtmlBody : null;
+            BodyContent = HtmlToAvaloniaRenderer.Build(body, mail.TextBody, value);
+        }
     }
 
     /// <summary>下载附件到桌面（重名自动追加序号）。</summary>
@@ -91,6 +118,8 @@ public partial class MailTabViewModel : ObservableObject
             var path = AttachmentStorage.BuildTargetPath(directory, attachment.FileName);
             await File.WriteAllBytesAsync(path, bytes, ct);
 
+            LastSavedFilePath = path;
+            HasSavedAttachment = true;
             Status = $"已保存到桌面：{Path.GetFileName(path)}";
         }
         catch (OperationCanceledException)
@@ -99,6 +128,24 @@ public partial class MailTabViewModel : ObservableObject
         catch (Exception ex)
         {
             Status = $"下载失败：{ex.Message}";
+        }
+    }
+
+    /// <summary>在资源管理器中定位最近保存的附件。</summary>
+    public void OpenContainingFolder()
+    {
+        if (string.IsNullOrWhiteSpace(LastSavedFilePath)) return;
+
+        try
+        {
+            Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{LastSavedFilePath}\"")
+            {
+                UseShellExecute = true,
+            });
+        }
+        catch (Exception ex)
+        {
+            Status = $"无法打开文件夹：{ex.Message}";
         }
     }
 
@@ -129,8 +176,8 @@ public partial class MailTabViewModel : ObservableObject
             // 请求期间账号已切换则丢弃结果
             if (cts.IsCancellationRequested || SelectedAccount?.Id != accountId) return;
 
-            Fill(list);
-            Status = list.Count == 0 ? "该账号暂无邮件。" : $"共 {Messages.Count} 封邮件";
+            SetMails(list);
+            UpdateLoadStatus(list.Count);
             await _cache.SaveAsync(accountId, list, cts.Token);
         }
         catch (OperationCanceledException)
@@ -144,8 +191,11 @@ public partial class MailTabViewModel : ObservableObject
             var cached = await _cache.TryLoadAsync(accountId, cts.Token);
             if (cached is { Count: > 0 })
             {
-                Fill(cached);
-                Status = $"无法连接服务器，显示本地缓存（{Messages.Count} 封）：{ex.Message}";
+                SetMails(cached);
+                if (string.IsNullOrWhiteSpace(SearchText))
+                {
+                    Status = $"无法连接服务器，显示本地缓存（{cached.Count} 封）：{ex.Message}";
+                }
             }
             else
             {
@@ -158,11 +208,46 @@ public partial class MailTabViewModel : ObservableObject
         }
     }
 
-    private void Fill(IReadOnlyList<MailMessage> mails)
+    private void SetMails(IReadOnlyList<MailMessage> mails)
     {
-        Messages.Clear();
-        foreach (var m in mails) Messages.Add(m);
+        _allMails.Clear();
+        _allMails.AddRange(mails);
+        ApplyFilter();
     }
+
+    private void ApplyFilter()
+    {
+        var query = SearchText?.Trim() ?? "";
+        var items = query.Length == 0
+            ? _allMails
+            : _allMails.Where(m => Matches(m, query)).ToList();
+
+        Messages.Clear();
+        foreach (var message in items) Messages.Add(message);
+
+        if (query.Length > 0)
+        {
+            Status = items.Count == 0
+                ? $"没有匹配“{query}”的邮件。"
+                : $"找到 {items.Count} 封匹配邮件（共 {_allMails.Count} 封）。";
+        }
+    }
+
+    private void UpdateLoadStatus(int total)
+    {
+        if (!string.IsNullOrWhiteSpace(SearchText)) return;
+
+        Status = total == 0 ? "该账号暂无邮件。" : $"共 {total} 封邮件";
+    }
+
+    private static bool Matches(MailMessage mail, string query) =>
+        Contains(mail.Subject, query) ||
+        Contains(mail.SenderName, query) ||
+        Contains(mail.SenderEmail, query) ||
+        Contains(mail.TextBody, query);
+
+    private static bool Contains(string? text, string query) =>
+        !string.IsNullOrEmpty(text) && text.Contains(query, StringComparison.OrdinalIgnoreCase);
 
     partial void OnSelectedMessageChanged(MailMessage? value)
     {
@@ -176,6 +261,6 @@ public partial class MailTabViewModel : ObservableObject
         }
 
         var body = value.HasHtml ? value.HtmlBody : null;
-        BodyContent = HtmlToAvaloniaRenderer.Build(body, value.TextBody);
+        BodyContent = HtmlToAvaloniaRenderer.Build(body, value.TextBody, LoadBodyImages);
     }
 }

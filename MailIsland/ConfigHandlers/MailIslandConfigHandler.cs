@@ -85,6 +85,7 @@ public sealed class MailIslandConfigHandler
         StaticDisplaySeconds = Data.StaticDisplaySeconds,
         ScrollCharsPerSecond = Data.ScrollCharsPerSecond,
         NotificationSpeechEnabled = Data.NotificationSpeechEnabled,
+        LoadBodyImages = Data.LoadBodyImages,
         Accounts = Data.Accounts.Select(a => new MailAccountSettings
         {
             Id = a.Id,
