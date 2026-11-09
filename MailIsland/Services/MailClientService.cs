@@ -104,6 +104,46 @@ public sealed class MailClientService : IMailClientService
         await client.DisconnectAsync(true, ct);
     }
 
+    /// <summary>下载指定邮件的单个附件。</summary>
+    public async Task<byte[]> DownloadAttachmentAsync(
+        MailAccountSettings account, string plainPassword, uint uid, string partSpecifier, CancellationToken ct)
+    {
+        using var client = new ImapClient();
+        await ConnectAsync(client, account, plainPassword, ct);
+
+        var inbox = client.Inbox;
+        await inbox.OpenAsync(FolderAccess.ReadOnly, ct);
+
+        // GetBodyPart 需要 BODYSTRUCTURE 中的部件对象，先按 UID 取回再定位
+        var summaries = await inbox.FetchAsync(
+            new[] { new UniqueId(uid) }, MessageSummaryItems.UniqueId | MessageSummaryItems.BodyStructure, ct);
+        var body = summaries.FirstOrDefault()?.Body;
+        var bodyPart = body == null ? null : FindBodyPart(body, partSpecifier);
+        if (bodyPart == null)
+        {
+            throw new InvalidOperationException("未找到该附件，可能已被删除或邮件结构已变化。");
+        }
+
+        var entity = await inbox.GetBodyPartAsync(new UniqueId(uid), bodyPart, ct)
+                     ?? throw new InvalidOperationException("无法获取附件内容。");
+        using var stream = new MemoryStream();
+
+        switch (entity)
+        {
+            case MessagePart messagePart when messagePart.Message != null:
+                await messagePart.Message.WriteToAsync(stream, ct);
+                break;
+            case MimePart part when part.Content != null:
+                await part.Content.DecodeToAsync(stream, ct);
+                break;
+            default:
+                throw new InvalidOperationException("该附件类型暂不支持下载。");
+        }
+
+        await client.DisconnectAsync(true, ct);
+        return stream.ToArray();
+    }
+
     private async Task ConnectAsync(ImapClient client, MailAccountSettings account, string plainPassword, CancellationToken ct)
     {
         await client.ConnectAsync(account.ImapServer, account.ImapPort,
@@ -120,6 +160,8 @@ public sealed class MailClientService : IMailClientService
         var subject = summary.Envelope?.Subject;
         if (string.IsNullOrWhiteSpace(subject)) subject = "(无主题)";
 
+        var attachments = BuildAttachmentInfos(summary);
+
         return new MailMessage
         {
             Uid = summary.UniqueId.Id,
@@ -128,8 +170,62 @@ public sealed class MailClientService : IMailClientService
             Subject = subject,
             Date = summary.Envelope?.Date?.ToOffset(TimeSpan.Zero) ?? DateTimeOffset.MinValue,
             IsUnread = !(summary.Flags?.HasFlag(MessageFlags.Seen) ?? false),
-            HasAttachment = summary.Attachments.Any(),
+            HasAttachment = attachments.Count > 0,
+            Attachments = attachments,
         };
+    }
+
+    /// <summary>从 BODYSTRUCTURE 提取附件元数据，下载时再按 PartSpecifier 拉取内容。</summary>
+    private static List<MailAttachmentInfo> BuildAttachmentInfos(IMessageSummary summary)
+    {
+        var result = new List<MailAttachmentInfo>();
+        var index = 0;
+
+        foreach (var part in summary.Attachments)
+        {
+            index++;
+
+            var fileName = part.FileName;
+            if (string.IsNullOrWhiteSpace(fileName))
+            {
+                var extension = MimeTypes.TryGetExtension(part.ContentType.MimeType, out var ext) ? ext : ".dat";
+                fileName = $"attachment-{index}{extension}";
+            }
+
+            result.Add(new MailAttachmentInfo
+            {
+                FileName = fileName,
+                ContentType = part.ContentType.MimeType,
+                Size = (long)part.Octets,
+                PartSpecifier = part.PartSpecifier,
+            });
+        }
+
+        return result;
+    }
+
+    /// <summary>按 PartSpecifier 在 BODYSTRUCTURE 中递归查找部件。</summary>
+    private static BodyPart? FindBodyPart(BodyPart part, string partSpecifier)
+    {
+        if (string.Equals(part.PartSpecifier, partSpecifier, StringComparison.Ordinal))
+        {
+            return part;
+        }
+
+        switch (part)
+        {
+            case BodyPartMultipart multipart:
+                foreach (var child in multipart.BodyParts)
+                {
+                    var found = FindBodyPart(child, partSpecifier);
+                    if (found != null) return found;
+                }
+                break;
+            case BodyPartMessage message when message.Body != null:
+                return FindBodyPart(message.Body, partSpecifier);
+        }
+
+        return null;
     }
 
     /// <summary>拉取正文：优先 HTML；同时派生平文本，供关键词匹配与提醒正文使用。</summary>

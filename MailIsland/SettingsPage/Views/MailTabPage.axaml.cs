@@ -69,6 +69,15 @@ public partial class MailTabPage : SettingsPageBase
                 ? "时间：未知"
                 : $"时间：{msg.Date.ToLocalTime():yyyy-MM-dd HH:mm}";
             BodyHost.Content = _vm.BodyContent;
+            AttachmentHeader.IsVisible = _vm.Attachments.Count > 0;
+        }
+    }
+
+    private async void OnDownloadAttachmentClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { DataContext: MailAttachmentInfo attachment })
+        {
+            await _vm.DownloadAttachmentAsync(attachment);
         }
     }
 }

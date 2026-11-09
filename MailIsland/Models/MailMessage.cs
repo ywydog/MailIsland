@@ -13,4 +13,6 @@ public sealed class MailMessage
     public string HtmlBody { get; set; } = "";
     public bool HasHtml { get; set; }
     public bool HasAttachment { get; set; }
+    /// <summary>附件元数据列表。</summary>
+    public List<MailAttachmentInfo> Attachments { get; set; } = new();
 }

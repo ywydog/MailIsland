@@ -15,4 +15,8 @@ public interface IMailClientService
     /// <summary>为已拉取的邮件补充正文（仅对需要推送的新邮件调用，避免每轮全量下载）。</summary>
     Task FillBodiesAsync(
         MailAccountSettings account, string plainPassword, IReadOnlyList<MailMessage> mails, CancellationToken ct);
+
+    /// <summary>下载指定邮件的单个附件。</summary>
+    Task<byte[]> DownloadAttachmentAsync(
+        MailAccountSettings account, string plainPassword, uint uid, string partSpecifier, CancellationToken ct);
 }
