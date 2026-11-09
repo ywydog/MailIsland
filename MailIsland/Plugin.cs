@@ -27,8 +27,19 @@ public partial class Plugin : PluginBase
         services.AddSingleton<MailPollingService>();
         services.AddHostedService(sp => sp.GetRequiredService<MailPollingService>());
 
-        // 注册提醒提供方（会自动注册为托管服务）
+        // 注册提醒提供方（自动登记元数据并注册为托管服务）
         services.AddNotificationProvider<MailNotificationProvider>();
+
+        // AddNotificationProvider 会以实现类型额外注册一个 IHostedService，导致同一提供方被构造两次、
+        // 在宿主中重复注册。这里改为复用上方注册的单例实例。
+        var duplicatedHostedService = services.FirstOrDefault(d =>
+            d.ServiceType == typeof(IHostedService) &&
+            d.ImplementationType == typeof(MailNotificationProvider));
+        if (duplicatedHostedService != null)
+        {
+            services.Remove(duplicatedHostedService);
+        }
+        services.AddSingleton<IHostedService>(sp => sp.GetRequiredService<MailNotificationProvider>());
 
         // 注册自动化触发器
         services.AddTrigger<Services.Automation.Triggers.NewMailTrigger, Controls.TriggerSettingsControls.NewMailTriggerSettingsControl>();

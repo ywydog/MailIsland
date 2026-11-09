@@ -29,29 +29,49 @@ public sealed class MailNotificationProvider : NotificationProviderBase
 
         var body = BuildOverlayBody(mail, overlayKind);
 
+        var mask = NotificationContent.CreateSimpleTextContent(title);
+
+        // 正文层模板为单行 + CharacterEllipsis，且容器高度约 40px，
+        // 因此内容需压成单行；同时不朗读邮件正文，避免语音泄露邮件内容。
+        var overlay = NotificationContent.CreateSimpleTextContent(body);
+        overlay.IsSpeechEnabled = false;
+        overlay.Duration = TimeSpan.FromSeconds(8);
+
         var request = new NotificationRequest
         {
-            MaskContent = NotificationContent.CreateSimpleTextContent(title),
-            OverlayContent = NotificationContent.CreateSimpleTextContent(body),
+            MaskContent = mask,
+            OverlayContent = overlay,
         };
 
         ShowNotification(request);
     }
 
-    /// <summary>根据用户设置构建正文层文本。</summary>
+    /// <summary>根据用户设置构建正文层文本（单行，超长截断）。</summary>
     private static string BuildOverlayBody(MailMessage mail, OverlayContentKind overlayKind)
     {
-        // 选择邮件正文且正文为空时，回退到发件人信息
+        // 选择邮件正文且正文不为空时显示正文摘要
         if (overlayKind == OverlayContentKind.Body && !string.IsNullOrWhiteSpace(mail.TextBody))
         {
-            return mail.TextBody;
+            return ToSingleLine(mail.TextBody);
         }
 
         var sender = string.IsNullOrWhiteSpace(mail.SenderName)
             ? mail.SenderEmail
             : $"{mail.SenderName} <{mail.SenderEmail}>";
-        return string.IsNullOrWhiteSpace(mail.Subject)
+        return ToSingleLine(string.IsNullOrWhiteSpace(mail.Subject)
             ? sender
-            : $"{sender}\n{mail.Subject}";
+            : $"{sender} · {mail.Subject}");
+    }
+
+    /// <summary>把任意文本压成单行并截断，避免正文层被裁切后只剩少量字符。</summary>
+    private static string ToSingleLine(string text, int maxLength = 160)
+    {
+        var normalized = string.Join(' ',
+            text.Split(['\r', '\n', '\t'], StringSplitOptions.RemoveEmptyEntries)
+                .Select(part => part.Trim())
+                .Where(part => part.Length > 0));
+
+        if (normalized.Length <= maxLength) return normalized;
+        return normalized[..maxLength] + "…";
     }
 }
