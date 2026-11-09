@@ -5,6 +5,7 @@ using MailIsland.ConfigHandlers;
 using MailIsland.Logic.Config;
 using MailIsland.Models;
 using MailIsland.Services;
+using MailIsland.Storage;
 
 namespace MailIsland.SettingsPage.SettingsViewModels;
 
@@ -14,6 +15,7 @@ public partial class MailTabViewModel : ObservableObject
     private readonly MailIslandConfigHandler _config;
     private readonly IMailClientService _mail;
     private readonly MailPollingService _polling;
+    private readonly MailCacheStore _cache;
 
     [ObservableProperty] private MailAccountSettings? _selectedAccount;
     [ObservableProperty] private MailMessage? _selectedMessage;
@@ -24,11 +26,13 @@ public partial class MailTabViewModel : ObservableObject
     public MailTabViewModel(
         MailIslandConfigHandler config,
         IMailClientService mail,
-        MailPollingService polling)
+        MailPollingService polling,
+        MailCacheStore cache)
     {
         _config = config;
         _mail = mail;
         _polling = polling;
+        _cache = cache;
         Messages = new ObservableCollection<MailMessage>();
     }
 
@@ -58,21 +62,37 @@ public partial class MailTabViewModel : ObservableObject
         {
             var plainPassword = _config.Protector.Decrypt(acc.EncryptedPassword);
             var list = await _mail.FetchRecentAsync(acc, plainPassword, _config.Data.MailCountLimit, ct);
-            Messages.Clear();
-            foreach (var m in list) Messages.Add(m);
+            Fill(list);
             Status = $"共 {Messages.Count} 封邮件";
+            await _cache.SaveAsync(acc.Id, list, ct);
         }
         catch (OperationCanceledException)
         {
         }
         catch (Exception ex)
         {
-            Status = ex.Message;
+            // 网络/服务器不可用时回退到上次成功拉取的本地缓存
+            var cached = await _cache.TryLoadAsync(acc.Id, ct);
+            if (cached is { Count: > 0 })
+            {
+                Fill(cached);
+                Status = $"无法连接服务器，显示本地缓存（{Messages.Count} 封）：{ex.Message}";
+            }
+            else
+            {
+                Status = ex.Message;
+            }
         }
         finally
         {
             IsLoading = false;
         }
+    }
+
+    private void Fill(IReadOnlyList<MailMessage> mails)
+    {
+        Messages.Clear();
+        foreach (var m in mails) Messages.Add(m);
     }
 
     partial void OnSelectedMessageChanged(MailMessage? value)

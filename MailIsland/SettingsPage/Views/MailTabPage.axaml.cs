@@ -10,6 +10,7 @@ using MailIsland.Models;
 using MailIsland.Services;
 using MailIsland.Shared;
 using MailIsland.SettingsPage.SettingsViewModels;
+using MailIsland.Storage;
 
 namespace MailIsland.SettingsPage.Views;
 
@@ -27,7 +28,8 @@ public partial class MailTabPage : SettingsPageBase
         _vm = new MailTabViewModel(
             IAppHost.GetService<MailIslandConfigHandler>(),
             IAppHost.GetService<IMailClientService>(),
-            IAppHost.GetService<MailPollingService>());
+            IAppHost.GetService<MailPollingService>(),
+            IAppHost.GetService<MailCacheStore>());
         DataContext = _vm;
 
         AccountCombo.ItemsSource = _vm.Accounts;
