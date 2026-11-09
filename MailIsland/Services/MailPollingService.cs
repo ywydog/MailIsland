@@ -115,12 +115,14 @@ public sealed class MailPollingService : BackgroundService
             var mails = await _mail.FetchRecentAsync(account, plainPassword, _config.Data.MailCountLimit, ct);
 
             var prefix = account.Id;
+
+            // 首轮同步只建立水位，不推送任何提醒；否则除最旧一封外的全部邮件都会被当作新邮件推送
+            var isFirstSync = !_lastUidByAccount.TryGetValue(prefix, out var lastUid);
+            var watermark = isFirstSync ? 0u : lastUid;
+
             foreach (var mail in mails.OrderBy(m => m.Uid))
             {
-                var isFirstSeen = !_lastUidByAccount.TryGetValue(prefix, out var lastUid);
-
-                // 首轮仅建立水位，不提醒；后续仅处理更新的邮件
-                if (!isFirstSeen && mail.Uid > lastUid)
+                if (!isFirstSync && mail.Uid > watermark)
                 {
                     // 通知与自动化触发涉及 UI，统一切到 UI 线程执行
                     var capturedAccount = account;
@@ -132,8 +134,10 @@ public sealed class MailPollingService : BackgroundService
                     });
                 }
 
-                _lastUidByAccount[prefix] = isFirstSeen ? mail.Uid : Math.Max(lastUid, mail.Uid);
+                if (mail.Uid > watermark) watermark = mail.Uid;
             }
+
+            _lastUidByAccount[prefix] = watermark;
         }
         catch (OperationCanceledException)
         {

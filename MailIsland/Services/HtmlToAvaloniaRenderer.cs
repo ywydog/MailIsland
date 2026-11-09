@@ -29,7 +29,9 @@ public static class HtmlToAvaloniaRenderer
                 TextWrapping = TextWrapping.Wrap,
                 FontSize = 14,
             };
-            emptyText.SetValue(TextBlock.ForegroundProperty, new DynamicResourceExtension("TextFillColorPrimaryBrush"));
+            // DynamicResourceExtension 是绑定（BindingBase），必须用 Bind/索引器设置，
+            // 直接 SetValue 会被当作普通值写入 Foreground 而抛 ArgumentException。
+            emptyText[!TextBlock.ForegroundProperty] = new DynamicResourceExtension("TextFillColorPrimaryBrush");
             panel.Children.Add(emptyText);
             return panel;
         }
@@ -70,7 +72,7 @@ public static class HtmlToAvaloniaRenderer
             FontWeight = bold ? FontWeight.SemiBold : FontWeight.Normal,
             FontStyle = italic ? FontStyle.Italic : FontStyle.Normal,
         };
-        tb.SetValue(TextBlock.ForegroundProperty, new DynamicResourceExtension("TextFillColorPrimaryBrush"));
+        tb[!TextBlock.ForegroundProperty] = new DynamicResourceExtension("TextFillColorPrimaryBrush");
         tb.Text = text;
         return tb;
     }
