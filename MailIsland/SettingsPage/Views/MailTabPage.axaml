@@ -29,6 +29,7 @@
                 <DockPanel>
                     <TextBlock x:Name="StatusText"
                                DockPanel.Dock="Top"
+                               Text="{Binding Status}"
                                FontSize="12"
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                     <ListBox x:Name="MessageList" ItemsSource="{Binding Messages}">

@@ -91,6 +91,13 @@ public sealed class MailPollingService : BackgroundService
                 await SyncAccountAsync(account, ct);
             }
 
+            // 清理已删除账号的水位，避免字典无限增长
+            var activeIds = _config.Data.Accounts.Select(a => a.Id).ToHashSet();
+            foreach (var staleId in _lastUidByAccount.Keys.Where(id => !activeIds.Contains(id)).ToList())
+            {
+                _lastUidByAccount.Remove(staleId);
+            }
+
             LastSyncTime = DateTimeOffset.Now;
             RaiseSyncStatus($"同步完成（{DateTime.Now:HH:mm:ss}）");
         }
@@ -105,14 +112,27 @@ public sealed class MailPollingService : BackgroundService
     {
         try
         {
-            var plainPassword = _config.Protector.Decrypt(account.EncryptedPassword);
-            if (string.IsNullOrWhiteSpace(plainPassword))
+            if (string.IsNullOrWhiteSpace(account.EncryptedPassword))
             {
-                _logger.LogWarning("账号 {Email} 未设置授权码，跳过", account.Email);
+                _logger.LogDebug("账号 {Account} 未设置授权码，跳过", MaskEmail(account.Email));
                 return;
             }
 
-            var mails = await _mail.FetchRecentAsync(account, plainPassword, _config.Data.MailCountLimit, ct);
+            string plainPassword;
+            try
+            {
+                plainPassword = _config.Protector.Decrypt(account.EncryptedPassword);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "账号 {Account} 授权码解密失败，跳过", MaskEmail(account.Email));
+                RaiseSyncStatus($"账号 {account.DisplayName} 授权码解密失败，请重新填写");
+                return;
+            }
+
+            // 轮询只取摘要，再为真正的新邮件补正文，避免每轮下载全部正文
+            var mails = await _mail.FetchRecentAsync(
+                account, plainPassword, _config.Data.MailCountLimit, includeBodies: false, ct);
 
             var prefix = account.Id;
 
@@ -120,21 +140,43 @@ public sealed class MailPollingService : BackgroundService
             var isFirstSync = !_lastUidByAccount.TryGetValue(prefix, out var lastUid);
             var watermark = isFirstSync ? 0u : lastUid;
 
+            var newMails = new List<MailMessage>();
             foreach (var mail in mails.OrderBy(m => m.Uid))
             {
-                if (!isFirstSync && mail.Uid > watermark)
+                if (!isFirstSync && mail.Uid > watermark) newMails.Add(mail);
+                if (mail.Uid > watermark) watermark = mail.Uid;
+            }
+
+            if (newMails.Count > 0)
+            {
+                // 仅拉取新邮件正文；失败则不推进水位，下一轮重试
+                await _mail.FillBodiesAsync(account, plainPassword, newMails, ct);
+
+                foreach (var mail in newMails)
                 {
-                    // 通知与自动化触发涉及 UI，统一切到 UI 线程执行
                     var capturedAccount = account;
                     var capturedMail = mail;
                     RunOnUiThread(() =>
                     {
-                        TryNotify(capturedAccount, capturedMail);
-                        NewMailReceived?.Invoke(this, capturedMail);
+                        try
+                        {
+                            TryNotify(capturedAccount, capturedMail);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "推送新邮件提醒失败");
+                        }
+
+                        try
+                        {
+                            NewMailReceived?.Invoke(this, capturedMail);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "触发新邮件自动化失败");
+                        }
                     });
                 }
-
-                if (mail.Uid > watermark) watermark = mail.Uid;
             }
 
             _lastUidByAccount[prefix] = watermark;
@@ -145,7 +187,7 @@ public sealed class MailPollingService : BackgroundService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "账号 {Email} 同步失败", account.Email);
+            _logger.LogWarning(ex, "账号 {Account} 同步失败", MaskEmail(account.Email));
             RaiseSyncStatus($"账号 {account.DisplayName} 同步失败");
         }
     }
@@ -186,24 +228,48 @@ public sealed class MailPollingService : BackgroundService
     private static bool RuleMatches(MailCandidate candidate, KeywordRule rule) =>
         KeywordMatcher.Matches(candidate, new[] { rule });
 
-    /// <summary>在 UI 线程上执行操作。已在 UI 线程则直接执行；否则通过 Dispatcher 投递。</summary>
-    private static void RunOnUiThread(Action action)
+    /// <summary>在 UI 线程上执行操作。已在 UI 线程则直接执行，否则通过 Dispatcher 投递。</summary>
+    private void RunOnUiThread(Action action)
     {
         if (Dispatcher.UIThread.CheckAccess())
         {
-            action();
+            SafeInvoke(action);
             return;
         }
 
-        // 应用退出时 Dispatcher 可能已停止，闪念投递异常，忽略即可
+        // 应用退出时 Dispatcher 可能已停止，投递异常忽略即可
         try
         {
-            Dispatcher.UIThread.Post(action);
+            Dispatcher.UIThread.Post(() => SafeInvoke(action));
         }
-        catch
+        catch (Exception ex)
         {
-            // 忽略：应用关闭竞态
+            _logger.LogDebug(ex, "向 UI 线程投递操作失败");
         }
+    }
+
+    /// <summary>执行回调并兜底异常，避免 UI 线程未处理异常导致宿主崩溃。</summary>
+    private void SafeInvoke(Action action)
+    {
+        try
+        {
+            action();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "UI 线程提醒回调执行失败");
+        }
+    }
+
+    /// <summary>日志脱敏：保留首字符与域名。</summary>
+    private static string MaskEmail(string? email)
+    {
+        if (string.IsNullOrWhiteSpace(email)) return "(未知)";
+
+        var at = email.IndexOf('@');
+        if (at <= 1) return "***";
+
+        return $"{email[0]}***{email[at..]}";
     }
 
     /// <summary>在 UI 线程上广播同步状态（供 UI 展示）。</summary>

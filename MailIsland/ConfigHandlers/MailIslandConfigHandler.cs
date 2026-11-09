@@ -3,6 +3,7 @@ using MailIsland.Logic.Config;
 using MailIsland.Logic.Security;
 using MailIsland.Shared;
 using MailIsland.Storage;
+using Microsoft.Extensions.Logging;
 
 namespace MailIsland.ConfigHandlers;
 
@@ -15,10 +16,12 @@ public sealed class MailIslandConfigHandler
 {
     private readonly string _configPath;
     private readonly ICredentialProtector _protector;
+    private readonly ILogger<MailIslandConfigHandler> _logger;
     private bool _needsSave;
 
-    public MailIslandConfigHandler()
+    public MailIslandConfigHandler(ILogger<MailIslandConfigHandler> logger)
     {
+        _logger = logger;
         _configPath = Path.Combine(GlobalConstants.PluginConfigFolder, "MailIslandConfig.json");
         var salt = SaltProvider.GetOrCreate(GlobalConstants.PluginConfigFolder);
         _protector = CreateProtector(salt);
@@ -33,8 +36,18 @@ public sealed class MailIslandConfigHandler
     /// <summary>获取当前凭据保护器（供 UI 设置授权码，以及加密本地邮件缓存）。</summary>
     public ICredentialProtector Protector => _protector;
 
-    /// <summary>保存配置：隐私字段加密后写入磁盘。</summary>
-    public void Save() => ConfigureFileHelper.SaveConfig(_configPath, BuildEncryptedSnapshot());
+    /// <summary>保存配置：隐私字段加密后写入磁盘；写入失败不抛出，避免中断 UI 操作。</summary>
+    public void Save()
+    {
+        try
+        {
+            ConfigureFileHelper.SaveConfig(_configPath, BuildEncryptedSnapshot());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "保存邮箱插件配置失败");
+        }
+    }
 
     private static ICredentialProtector CreateProtector(byte[]? salt) =>
         OperatingSystem.IsWindows()

@@ -43,4 +43,28 @@ public class HtmlSanitizerTests
         Assert.Equal("", HtmlSanitizer.Sanitize(null));
         Assert.Equal("", HtmlSanitizer.Sanitize("   "));
     }
+
+    [Fact]
+    public void ToPlainText_RemovesTagsAndScripts()
+    {
+        var html = "<p>你好 <b>世界</b></p><script>alert(1)</script><style>.x{}</style>";
+        var text = HtmlSanitizer.ToPlainText(html);
+
+        Assert.Contains("你好", text);
+        Assert.Contains("世界", text);
+        Assert.DoesNotContain("alert", text);
+        Assert.DoesNotContain("<", text);
+    }
+
+    [Fact]
+    public void ToPlainText_DecodesEntities()
+    {
+        Assert.Equal("a & b", HtmlSanitizer.ToPlainText("a &amp; b"));
+    }
+
+    [Fact]
+    public void ToPlainText_NullReturnsEmpty()
+    {
+        Assert.Equal("", HtmlSanitizer.ToPlainText(null));
+    }
 }

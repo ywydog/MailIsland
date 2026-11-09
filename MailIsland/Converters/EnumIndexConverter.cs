@@ -9,15 +9,20 @@ public class EnumIndexConverter : IValueConverter
 {
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        if (value == null) return 0;
+        if (value == null || !value.GetType().IsEnum) return 0;
         var values = Enum.GetValues(value.GetType());
         return Array.IndexOf(values, value);
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        if (value is not int idx) return 0;
+        if (!targetType.IsEnum) return null;
+
         var values = Enum.GetValues(targetType);
-        return idx >= 0 && idx < values.Length ? values.GetValue(idx)! : 0;
+        if (values.Length == 0) return null;
+
+        return value is int idx && idx >= 0 && idx < values.Length
+            ? values.GetValue(idx)
+            : values.GetValue(0);
     }
 }

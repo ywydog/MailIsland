@@ -9,6 +9,7 @@ using MailIsland.Logic.Presets;
 using MailIsland.Services;
 using MailIsland.Shared;
 using MailIsland.SettingsPage.SettingsViewModels;
+using MailIsland.Storage;
 
 namespace MailIsland.SettingsPage.Views;
 
@@ -25,11 +26,12 @@ public partial class AccountTabPage : SettingsPageBase
 
         _vm = new AccountTabViewModel(
             IAppHost.GetService<MailIslandConfigHandler>(),
-            IAppHost.GetService<IMailClientService>());
+            IAppHost.GetService<IMailClientService>(),
+            IAppHost.GetService<MailCacheStore>());
         DataContext = _vm;
 
         SetupControls();
-        RefreshList();
+        RefreshList(clearPassword: true);
     }
 
     private void SetupControls()
@@ -82,7 +84,7 @@ public partial class AccountTabPage : SettingsPageBase
         };
     }
 
-    private void RefreshList()
+    private void RefreshList(bool clearPassword = false)
     {
         EditorArea.IsVisible = _vm.Current != null;
         if (_vm.Current is not { } acc) return;
@@ -95,6 +97,14 @@ public partial class AccountTabPage : SettingsPageBase
         SmtpPortBox.Text = acc.SmtpPort.ToString();
         ImapSslCheck.IsChecked = acc.ImapUseSsl;
         SmtpSslCheck.IsChecked = acc.SmtpUseSsl;
+
+        // 切换/新增/删除账号后必须清空授权码，避免把上一个账号的授权码写入当前账号
+        if (clearPassword)
+        {
+            PasswordBox.Text = "";
+            _vm.PasswordPlain = "";
+        }
+
         StatusText.Text = _vm.Status;
         StatusText.IsVisible = !string.IsNullOrEmpty(_vm.Status);
     }
@@ -106,20 +116,20 @@ public partial class AccountTabPage : SettingsPageBase
             foreach (var a in _vm.Accounts) a.IsSelected = false;
             acc.IsSelected = true;
             _vm.Current = acc;
-            RefreshList();
+            RefreshList(clearPassword: true);
         }
     }
 
     private void OnAddClick(object? sender, RoutedEventArgs e)
     {
         _vm.AddAccount();
-        RefreshList();
+        RefreshList(clearPassword: true);
     }
 
     private void OnDeleteClick(object? sender, RoutedEventArgs e)
     {
         _vm.DeleteAccount();
-        RefreshList();
+        RefreshList(clearPassword: true);
     }
 
     private void OnPresetChanged(object? sender, SelectionChangedEventArgs e)
@@ -144,8 +154,9 @@ public partial class AccountTabPage : SettingsPageBase
         _vm.PasswordPlain = PasswordBox.Text ?? "";
         _vm.ApplyPasswordAndSave();
         _vm.SaveAll();
+        PasswordBox.Text = "";
         StatusText.Text = _vm.Status;
         StatusText.IsVisible = true;
-        RefreshList();
+        RefreshList(clearPassword: true);
     }
 }

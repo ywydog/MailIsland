@@ -5,6 +5,7 @@ using MailIsland.Logic.Config;
 using MailIsland.Logic.Presets;
 using MailIsland.Logic.Shared;
 using MailIsland.Services;
+using MailIsland.Storage;
 
 namespace MailIsland.SettingsPage.SettingsViewModels;
 
@@ -13,16 +14,18 @@ public partial class AccountTabViewModel : ObservableObject
 {
     private readonly MailIslandConfigHandler _config;
     private readonly IMailClientService _mail;
+    private readonly MailCacheStore _cache;
 
     [ObservableProperty] private MailAccountSettings? _current;
     [ObservableProperty] private string _status = "";
     [ObservableProperty] private bool _isTesting;
     [ObservableProperty] private string _passwordPlain = "";
 
-    public AccountTabViewModel(MailIslandConfigHandler config, IMailClientService mail)
+    public AccountTabViewModel(MailIslandConfigHandler config, IMailClientService mail, MailCacheStore cache)
     {
         _config = config;
         _mail = mail;
+        _cache = cache;
         Accounts = new ObservableCollection<MailAccountSettings>(config.Data.Accounts);
     }
 
@@ -70,6 +73,7 @@ public partial class AccountTabViewModel : ObservableObject
         {
             acc.EncryptedPassword = _config.Protector.Encrypt(PasswordPlain);
             _config.Save();
+            PasswordPlain = "";
             Status = "授权码已保存。";
         }
     }
@@ -89,9 +93,14 @@ public partial class AccountTabViewModel : ObservableObject
     public void DeleteAccount()
     {
         if (Current is not { } acc) return;
+
+        var deletedId = acc.Id;
         Accounts.Remove(acc);
         Current = Accounts.FirstOrDefault();
         SaveAccounts();
+
+        // 同步清除该账号的本地邮件缓存，避免隐私数据残留
+        _cache.Delete(deletedId);
     }
 
     /// <summary>根据预设填充服务器信息。</summary>

@@ -60,6 +60,14 @@ public sealed class MailCacheStore
         }
     }
 
+    /// <summary>删除指定账号的缓存（删除账号时调用，避免隐私数据残留）。</summary>
+    public void Delete(string accountId)
+    {
+        if (string.IsNullOrWhiteSpace(accountId)) return;
+
+        TryDelete(GetCachePath(accountId));
+    }
+
     /// <summary>读取并解密账号缓存；不存在或无法解密时返回 null。</summary>
     public async Task<List<MailMessage>?> TryLoadAsync(string accountId, CancellationToken ct = default)
     {
@@ -102,6 +110,12 @@ public sealed class MailCacheStore
             {
                 File.Delete(file);
             }
+
+            // 清理异常退出遗留的临时文件
+            foreach (var file in Directory.EnumerateFiles(folder, "*.tmp"))
+            {
+                File.Delete(file);
+            }
         }
         catch (Exception ex)
         {
@@ -121,11 +135,15 @@ public sealed class MailCacheStore
         }
     }
 
+    /// <summary>账号 Id 只保留字母、数字、短横线、下划线，避免路径穿越与非法文件名。</summary>
     private static string SanitizeFileName(string value)
     {
-        var invalid = Path.GetInvalidFileNameChars();
-        var chars = value.Trim().Select(c => invalid.Contains(c) ? '_' : c).ToArray();
+        var chars = value.Trim()
+            .Where(c => char.IsLetterOrDigit(c) || c is '-' or '_')
+            .ToArray();
+
         var name = new string(chars);
-        return string.IsNullOrWhiteSpace(name) ? "unknown" : name;
+        if (name.Length == 0) return "unknown";
+        return name.Length <= 64 ? name : name[..64];
     }
 }

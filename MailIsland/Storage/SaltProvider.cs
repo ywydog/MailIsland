@@ -23,23 +23,38 @@ public static class SaltProvider
         {
             if (_cached is { Length: > 0 }) return _cached;
 
+            var path = Path.Combine(folder, SaltFileName);
+
             try
             {
                 Directory.CreateDirectory(folder);
-                var path = Path.Combine(folder, SaltFileName);
 
                 if (File.Exists(path))
                 {
-                    var saved = Convert.FromBase64String(File.ReadAllText(path).Trim());
-                    if (saved.Length >= SaltSize)
+                    try
                     {
-                        _cached = saved;
-                        return _cached;
+                        var saved = Convert.FromBase64String(File.ReadAllText(path).Trim());
+                        if (saved.Length >= SaltSize)
+                        {
+                            _cached = saved;
+                            return _cached;
+                        }
                     }
+                    catch
+                    {
+                        // 盐文件损坏：删除后重新生成，避免永久退化为无盐模式
+                    }
+
+                    TryDelete(path);
                 }
 
                 var salt = RandomNumberGenerator.GetBytes(SaltSize);
-                File.WriteAllText(path, Convert.ToBase64String(salt));
+
+                // 先写临时文件再替换，避免中途退出留下半个文件
+                var tempPath = path + ".tmp";
+                File.WriteAllText(tempPath, Convert.ToBase64String(salt));
+                File.Move(tempPath, path, overwrite: true);
+
                 _cached = salt;
                 return _cached;
             }
@@ -48,6 +63,18 @@ public static class SaltProvider
                 // 盐不可用时不阻断插件运行，退化为无盐加密
                 return null;
             }
+        }
+    }
+
+    private static void TryDelete(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch
+        {
+            // 删除失败时后续写入会覆盖
         }
     }
 }

@@ -56,6 +56,12 @@ public partial class NotifyTabViewModel : ObservableObject
     partial void OnPollIntervalMinutesChanged(int value)
     {
         var clamped = Math.Clamp(value, 1, 1440);
+        if (clamped != value)
+        {
+            PollIntervalMinutes = clamped;
+            return;
+        }
+
         _config.Data.PollIntervalMinutes = clamped;
         _config.Save();
     }
@@ -63,6 +69,12 @@ public partial class NotifyTabViewModel : ObservableObject
     partial void OnMailCountLimitChanged(int value)
     {
         var clamped = Math.Clamp(value, 1, 500);
+        if (clamped != value)
+        {
+            MailCountLimit = clamped;
+            return;
+        }
+
         _config.Data.MailCountLimit = clamped;
         _config.Save();
     }
@@ -88,6 +100,12 @@ public partial class NotifyTabViewModel : ObservableObject
     partial void OnStaticDisplaySecondsChanged(int value)
     {
         var clamped = Math.Clamp(value, 3, 120);
+        if (clamped != value)
+        {
+            StaticDisplaySeconds = clamped;
+            return;
+        }
+
         _config.Data.StaticDisplaySeconds = clamped;
         _config.Save();
     }
@@ -95,6 +113,12 @@ public partial class NotifyTabViewModel : ObservableObject
     partial void OnScrollCharsPerSecondChanged(int value)
     {
         var clamped = Math.Clamp(value, 1, 100);
+        if (clamped != value)
+        {
+            ScrollCharsPerSecond = clamped;
+            return;
+        }
+
         _config.Data.ScrollCharsPerSecond = clamped;
         _config.Save();
     }

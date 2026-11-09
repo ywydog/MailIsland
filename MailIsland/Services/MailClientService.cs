@@ -2,6 +2,7 @@ using MailKit;
 using MailKit.Net.Imap;
 using MailKit.Security;
 using MailIsland.Logic.Config;
+using MailIsland.Logic.Html;
 using MailIsland.Models;
 using Microsoft.Extensions.Logging;
 using MimeKit;
@@ -38,20 +39,14 @@ public sealed class MailClientService : IMailClientService
         }
     }
 
-    /// <summary>拉取最近 count 封邮件（含正文 Html/Text）。</summary>
+    /// <summary>拉取最近 count 封邮件；<paramref name="includeBodies"/> 为 false 时只取摘要。</summary>
     public async Task<List<MailMessage>> FetchRecentAsync(
-        MailAccountSettings account, string plainPassword, int count, CancellationToken ct)
+        MailAccountSettings account, string plainPassword, int count, bool includeBodies, CancellationToken ct)
     {
         var result = new List<MailMessage>();
 
         using var client = new ImapClient();
-        await client.ConnectAsync(account.ImapServer, account.ImapPort,
-            account.ImapUseSsl ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls, ct);
-        await client.AuthenticateAsync(account.Email, plainPassword, ct);
-
-        // 网易邮箱（163/126/yeah 等）若未在登录后发送 IMAP ID，会以
-        // “EXAMINE Unsafe Login” 拒绝打开收件箱（RFC 2971）。
-        await TryIdentifyAsync(client, ct);
+        await ConnectAsync(client, account, plainPassword, ct);
 
         var inbox = client.Inbox;
         await inbox.OpenAsync(FolderAccess.ReadOnly, ct);
@@ -68,43 +63,99 @@ public sealed class MailClientService : IMailClientService
 
             foreach (var s in summaries.OrderByDescending(s => s.UniqueId))
             {
-                var subject = s.Envelope?.Subject;
-                if (string.IsNullOrWhiteSpace(subject)) subject = "(无主题)";
-
-                var message = new MailMessage
+                var message = CreateMessage(s);
+                if (includeBodies)
                 {
-                    Uid = s.UniqueId.Id,
-                    SenderName = s.Envelope?.From.Mailboxes.FirstOrDefault()?.Name ?? "",
-                    SenderEmail = s.Envelope?.From.Mailboxes.FirstOrDefault()?.Address ?? "",
-                    Subject = subject,
-                    Date = s.Envelope?.Date?.ToOffset(TimeSpan.Zero) ?? DateTimeOffset.MinValue,
-                    IsUnread = !(s.Flags?.HasFlag(MessageFlags.Seen) ?? false),
-                    HasAttachment = s.Attachments.Any(),
-                };
-
-                // 拉取正文：有 HTML 用 HTML，否则用纯文本
-                if (s.HtmlBody != null)
-                {
-                    var htmlEntity = await inbox.GetBodyPartAsync(s.UniqueId, s.HtmlBody, ct);
-                    if (htmlEntity is TextPart htmlText)
-                    {
-                        message.HtmlBody = htmlText.Text;
-                        message.HasHtml = true;
-                    }
+                    await PopulateBodyAsync(inbox, s, message, ct);
                 }
-                if (!message.HasHtml && s.TextBody != null)
-                {
-                    var textEntity = await inbox.GetBodyPartAsync(s.UniqueId, s.TextBody, ct);
-                    if (textEntity is TextPart text)
-                        message.TextBody = text.Text;
-                }
-
                 result.Add(message);
             }
         }
 
         await client.DisconnectAsync(true, ct);
         return result;
+    }
+
+    /// <summary>为指定邮件补充正文（按 UID 精确拉取，避免重复下载所有邮件）。</summary>
+    public async Task FillBodiesAsync(
+        MailAccountSettings account, string plainPassword, IReadOnlyList<MailMessage> mails, CancellationToken ct)
+    {
+        if (mails.Count == 0) return;
+
+        using var client = new ImapClient();
+        await ConnectAsync(client, account, plainPassword, ct);
+
+        var inbox = client.Inbox;
+        await inbox.OpenAsync(FolderAccess.ReadOnly, ct);
+
+        var byUid = mails.GroupBy(m => m.Uid).ToDictionary(g => g.Key, g => g.First());
+        var uids = byUid.Keys.Select(uid => new UniqueId(uid)).ToList();
+        var summaries = await inbox.FetchAsync(
+            uids, MessageSummaryItems.UniqueId | MessageSummaryItems.BodyStructure, ct);
+
+        foreach (var summary in summaries)
+        {
+            if (byUid.TryGetValue(summary.UniqueId.Id, out var message))
+            {
+                await PopulateBodyAsync(inbox, summary, message, ct);
+            }
+        }
+
+        await client.DisconnectAsync(true, ct);
+    }
+
+    private async Task ConnectAsync(ImapClient client, MailAccountSettings account, string plainPassword, CancellationToken ct)
+    {
+        await client.ConnectAsync(account.ImapServer, account.ImapPort,
+            account.ImapUseSsl ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls, ct);
+        await client.AuthenticateAsync(account.Email, plainPassword, ct);
+
+        // 网易邮箱（163/126/yeah 等）若未在登录后发送 IMAP ID，会以
+        // “EXAMINE Unsafe Login” 拒绝打开收件箱（RFC 2971）。
+        await TryIdentifyAsync(client, ct);
+    }
+
+    private static MailMessage CreateMessage(IMessageSummary summary)
+    {
+        var subject = summary.Envelope?.Subject;
+        if (string.IsNullOrWhiteSpace(subject)) subject = "(无主题)";
+
+        return new MailMessage
+        {
+            Uid = summary.UniqueId.Id,
+            SenderName = summary.Envelope?.From.Mailboxes.FirstOrDefault()?.Name ?? "",
+            SenderEmail = summary.Envelope?.From.Mailboxes.FirstOrDefault()?.Address ?? "",
+            Subject = subject,
+            Date = summary.Envelope?.Date?.ToOffset(TimeSpan.Zero) ?? DateTimeOffset.MinValue,
+            IsUnread = !(summary.Flags?.HasFlag(MessageFlags.Seen) ?? false),
+            HasAttachment = summary.Attachments.Any(),
+        };
+    }
+
+    /// <summary>拉取正文：优先 HTML；同时派生平文本，供关键词匹配与提醒正文使用。</summary>
+    private static async Task PopulateBodyAsync(
+        IMailFolder inbox, IMessageSummary summary, MailMessage message, CancellationToken ct)
+    {
+        if (summary.HtmlBody != null)
+        {
+            var htmlEntity = await inbox.GetBodyPartAsync(summary.UniqueId, summary.HtmlBody, ct);
+            if (htmlEntity is TextPart htmlText)
+            {
+                message.HtmlBody = htmlText.Text;
+                message.HasHtml = true;
+                message.TextBody = HtmlSanitizer.ToPlainText(htmlText.Text);
+            }
+            return;
+        }
+
+        if (summary.TextBody != null)
+        {
+            var textEntity = await inbox.GetBodyPartAsync(summary.UniqueId, summary.TextBody, ct);
+            if (textEntity is TextPart text)
+            {
+                message.TextBody = text.Text;
+            }
+        }
     }
 
     /// <summary>

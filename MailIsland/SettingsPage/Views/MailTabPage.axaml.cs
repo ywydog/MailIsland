@@ -28,7 +28,6 @@ public partial class MailTabPage : SettingsPageBase
         _vm = new MailTabViewModel(
             IAppHost.GetService<MailIslandConfigHandler>(),
             IAppHost.GetService<IMailClientService>(),
-            IAppHost.GetService<MailPollingService>(),
             IAppHost.GetService<MailCacheStore>());
         DataContext = _vm;
 
@@ -55,7 +54,6 @@ public partial class MailTabPage : SettingsPageBase
     private async void OnRefreshClick(object? sender, RoutedEventArgs e)
     {
         await _vm.LoadAsync();
-        StatusText.Text = _vm.Status;
     }
 
     private void OnMessageSelectionChanged(object? sender, SelectionChangedEventArgs e)
@@ -64,8 +62,12 @@ public partial class MailTabPage : SettingsPageBase
         {
             _vm.SelectedMessage = msg;
             DetailSubject.Text = msg.Subject;
-            DetailFrom.Text = $"发件人：{msg.SenderName} <{msg.SenderEmail}>";
-            DetailDate.Text = $"时间：{msg.Date:yyyy-MM-dd HH:mm}";
+            DetailFrom.Text = string.IsNullOrWhiteSpace(msg.SenderEmail)
+                ? $"发件人：{msg.SenderName}"
+                : $"发件人：{msg.SenderName} <{msg.SenderEmail}>";
+            DetailDate.Text = msg.Date == default
+                ? "时间：未知"
+                : $"时间：{msg.Date.ToLocalTime():yyyy-MM-dd HH:mm}";
             BodyHost.Content = _vm.BodyContent;
         }
     }

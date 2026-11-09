@@ -22,6 +22,9 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore MailIsland.sln
 
+      - name: Run unit tests
+        run: dotnet test MailIsland.Logic.Tests/MailIsland.Logic.Tests.csproj -c Release --no-restore --nologo
+
       - name: Publish plugin (CIPX)
         # SDK 的 CreateCipx 目标在 Build 后自动产出 MailIsland/cipx/MailIsland.cipx；-o 指定发布输出目录供依赖检查
         run: dotnet publish MailIsland/MailIsland.csproj -c Release --no-restore -p:CreateCipx=true -o "${{ github.workspace }}/artifacts/MailIsland" --nologo

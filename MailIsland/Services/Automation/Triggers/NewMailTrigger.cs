@@ -14,24 +14,39 @@ namespace MailIsland.Services.Automation.Triggers;
 public class NewMailTrigger(MailPollingService pollingService) : TriggerBase<NewMailTriggerSettings>
 {
     private MailPollingService PollingService { get; } = pollingService;
+    private bool _subscribed;
 
     /// <inheritdoc />
     public override void Loaded()
     {
+        // 幂等订阅，避免宿主重复调用 Loaded 时一次新邮件触发多次
+        if (_subscribed) return;
+
         PollingService.NewMailReceived += OnNewMailReceived;
+        _subscribed = true;
     }
 
     /// <inheritdoc />
     public override void UnLoaded()
     {
+        if (!_subscribed) return;
+
         PollingService.NewMailReceived -= OnNewMailReceived;
+        _subscribed = false;
     }
 
     private void OnNewMailReceived(object? sender, MailMessage mail)
     {
-        if (Matches(mail))
+        try
         {
-            Trigger();
+            if (Matches(mail))
+            {
+                Trigger();
+            }
+        }
+        catch
+        {
+            // 自动化执行异常不应影响邮件轮询与其他触发器
         }
     }
 

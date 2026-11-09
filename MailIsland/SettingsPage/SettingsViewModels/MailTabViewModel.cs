@@ -14,8 +14,9 @@ public partial class MailTabViewModel : ObservableObject
 {
     private readonly MailIslandConfigHandler _config;
     private readonly IMailClientService _mail;
-    private readonly MailPollingService _polling;
     private readonly MailCacheStore _cache;
+
+    private CancellationTokenSource? _loadCts;
 
     [ObservableProperty] private MailAccountSettings? _selectedAccount;
     [ObservableProperty] private MailMessage? _selectedMessage;
@@ -26,23 +27,26 @@ public partial class MailTabViewModel : ObservableObject
     public MailTabViewModel(
         MailIslandConfigHandler config,
         IMailClientService mail,
-        MailPollingService polling,
         MailCacheStore cache)
     {
         _config = config;
         _mail = mail;
-        _polling = polling;
         _cache = cache;
+        Accounts = new ReadOnlyCollection<MailAccountSettings>(
+            config.Data.Accounts.Where(a => a.Enabled).ToList());
         Messages = new ObservableCollection<MailMessage>();
     }
 
-    public ObservableCollection<MailAccountSettings> Accounts => new(_config.Data.Accounts.Where(a => a.Enabled));
+    public IReadOnlyList<MailAccountSettings> Accounts { get; }
     public ObservableCollection<MailMessage> Messages { get; }
 
     partial void OnSelectedAccountChanged(MailAccountSettings? value)
     {
         SelectedMessage = null;
         BodyContent = null;
+
+        // 切换账号时取消上一个账号尚未完成的加载，避免结果串号
+        _loadCts?.Cancel();
         if (value != null) _ = LoadAsync();
     }
 
@@ -56,23 +60,36 @@ public partial class MailTabViewModel : ObservableObject
             return;
         }
 
+        _loadCts?.Cancel();
+        _loadCts?.Dispose();
+        var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        _loadCts = cts;
+
+        var accountId = acc.Id;
         IsLoading = true;
         Status = "正在加载邮件…";
         try
         {
             var plainPassword = _config.Protector.Decrypt(acc.EncryptedPassword);
-            var list = await _mail.FetchRecentAsync(acc, plainPassword, _config.Data.MailCountLimit, ct);
+            var list = await _mail.FetchRecentAsync(
+                acc, plainPassword, _config.Data.MailCountLimit, includeBodies: true, cts.Token);
+
+            // 请求期间账号已切换则丢弃结果
+            if (cts.IsCancellationRequested || SelectedAccount?.Id != accountId) return;
+
             Fill(list);
             Status = $"共 {Messages.Count} 封邮件";
-            await _cache.SaveAsync(acc.Id, list, ct);
+            await _cache.SaveAsync(accountId, list, cts.Token);
         }
         catch (OperationCanceledException)
         {
         }
         catch (Exception ex)
         {
+            if (cts.IsCancellationRequested || SelectedAccount?.Id != accountId) return;
+
             // 网络/服务器不可用时回退到上次成功拉取的本地缓存
-            var cached = await _cache.TryLoadAsync(acc.Id, ct);
+            var cached = await _cache.TryLoadAsync(accountId, cts.Token);
             if (cached is { Count: > 0 })
             {
                 Fill(cached);
@@ -85,7 +102,7 @@ public partial class MailTabViewModel : ObservableObject
         }
         finally
         {
-            IsLoading = false;
+            if (ReferenceEquals(_loadCts, cts)) IsLoading = false;
         }
     }
 

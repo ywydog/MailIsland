@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using HtmlAgilityPack;
 
 namespace MailIsland.Logic.Html;
@@ -71,6 +72,28 @@ public static class HtmlSanitizer
         }
 
         return doc.DocumentNode.WriteTo();
+    }
+
+    /// <summary>把 HTML 转为纯文本（去除脚本/样式并压缩空白），用于关键词匹配与提醒正文。</summary>
+    public static string ToPlainText(string? html)
+    {
+        if (string.IsNullOrWhiteSpace(html)) return string.Empty;
+
+        var doc = new HtmlDocument();
+        doc.LoadHtml(html);
+
+        var removable = doc.DocumentNode.SelectNodes("//script|//style");
+        if (removable != null)
+        {
+            foreach (var node in removable.ToList()) node.Remove();
+        }
+
+        var text = HtmlEntity.DeEntitize(doc.DocumentNode.InnerText);
+        text = text.Replace("\r\n", "\n").Replace('\r', '\n');
+        text = Regex.Replace(text, "[ \\t\\f\\v]+", " ");
+        text = Regex.Replace(text, " *\\n *", "\n");
+        text = Regex.Replace(text, "\\n{3,}", "\n\n");
+        return text.Trim();
     }
 
     private static bool IsAllowedUri(string value, HashSet<string> allowedSchemes)

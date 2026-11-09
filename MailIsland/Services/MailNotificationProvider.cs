@@ -37,7 +37,7 @@ public sealed class MailNotificationProvider : NotificationProviderBase
         var mask = NotificationContent.CreateSimpleTextContent(BuildMaskTitle(mail, account, config.MaskContentKind, keywordHit, keyword));
         mask.IsSpeechEnabled = config.NotificationSpeechEnabled;
 
-        var body = BuildOverlayBody(mail, config.OverlayContentKind);
+        var body = BuildOverlayBody(mail, account, config.OverlayContentKind);
         var overlay = BuildOverlayContent(body, config);
         overlay.IsSpeechEnabled = config.NotificationSpeechEnabled;
 
@@ -94,9 +94,10 @@ public sealed class MailNotificationProvider : NotificationProviderBase
     }
 
     /// <summary>根据用户设置构建正文层文本（单行，超长截断）。</summary>
-    private static string BuildOverlayBody(MailMessage mail, OverlayContentKind overlayKind)
+    private static string BuildOverlayBody(
+        MailMessage mail, MailAccountSettings account, OverlayContentKind overlayKind)
     {
-        var sender = GetSenderText(mail, account: null);
+        var sender = GetSenderText(mail, account);
         var subject = mail.Subject;
 
         var text = overlayKind switch
