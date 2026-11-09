@@ -20,6 +20,12 @@ namespace MailIsland.Services;
     "通过邮箱插件拉取新邮件，命中关键词时推送提醒。")]
 public sealed class MailNotificationProvider : NotificationProviderBase
 {
+    /// <summary>不超过该长度时直接静态显示，超过则滚动显示。</summary>
+    private const int SimpleTextThreshold = 28;
+
+    /// <summary>正文层文本的最大长度（滚动展示，避免过长占用过多时间）。</summary>
+    private const int MaxOverlayLength = 240;
+
     /// <summary>推送新邮件提醒。</summary>
     public void Notify(MailMessage mail, MailAccountSettings account, OverlayContentKind overlayKind, bool keywordHit, string? keyword = null)
     {
@@ -30,12 +36,7 @@ public sealed class MailNotificationProvider : NotificationProviderBase
         var body = BuildOverlayBody(mail, overlayKind);
 
         var mask = NotificationContent.CreateSimpleTextContent(title);
-
-        // 正文层模板为单行 + CharacterEllipsis，且容器高度约 40px，
-        // 因此内容需压成单行；同时不朗读邮件正文，避免语音泄露邮件内容。
-        var overlay = NotificationContent.CreateSimpleTextContent(body);
-        overlay.IsSpeechEnabled = false;
-        overlay.Duration = TimeSpan.FromSeconds(8);
+        var overlay = BuildOverlayContent(body);
 
         var request = new NotificationRequest
         {
@@ -44,6 +45,25 @@ public sealed class MailNotificationProvider : NotificationProviderBase
         };
 
         ShowNotification(request);
+    }
+
+    /// <summary>短文本直接显示，长文本使用宿主内置的滚动文本模板横向滚动。</summary>
+    private static NotificationContent BuildOverlayContent(string body)
+    {
+        if (body.Length <= SimpleTextThreshold)
+        {
+            var simple = NotificationContent.CreateSimpleTextContent(body);
+            simple.IsSpeechEnabled = false;
+            simple.Duration = TimeSpan.FromSeconds(8);
+            return simple;
+        }
+
+        // 滚动模板为单行，正好适配正文层约 40px 的高度；
+        // 按每秒约 8 个字符估算时长，并限制在 8~30 秒。
+        var seconds = Math.Clamp(body.Length / 8.0, 8, 30);
+        return NotificationContent.CreateRollingTextContent(
+            body, TimeSpan.FromSeconds(seconds), repeatCount: 1,
+            content => content.IsSpeechEnabled = false);
     }
 
     /// <summary>根据用户设置构建正文层文本（单行，超长截断）。</summary>
@@ -63,8 +83,8 @@ public sealed class MailNotificationProvider : NotificationProviderBase
             : $"{sender} · {mail.Subject}");
     }
 
-    /// <summary>把任意文本压成单行并截断，避免正文层被裁切后只剩少量字符。</summary>
-    private static string ToSingleLine(string text, int maxLength = 160)
+    /// <summary>把任意文本压成单行并截断，避免正文层出现换行或被裁切。</summary>
+    private static string ToSingleLine(string text, int maxLength = MaxOverlayLength)
     {
         var normalized = string.Join(' ',
             text.Split(['\r', '\n', '\t'], StringSplitOptions.RemoveEmptyEntries)
