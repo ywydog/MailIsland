@@ -2,7 +2,6 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using MailIsland.ConfigHandlers;
 using MailIsland.Logic.Config;
-using MailIsland.Logic.Mail;
 using MailIsland.Logic.Shared;
 
 namespace MailIsland.SettingsPage.SettingsViewModels;
@@ -23,8 +22,8 @@ public partial class NotifyTabViewModel : ObservableObject
     [ObservableProperty] private bool _notificationSpeechEnabled;
     [ObservableProperty] private bool _notifySummaryMode;
     [ObservableProperty] private bool _quietHoursEnabled;
-    [ObservableProperty] private string _quietHoursStart = "21:00";
-    [ObservableProperty] private string _quietHoursEnd = "07:00";
+    [ObservableProperty] private TimeSpan? _quietHoursStartTime;
+    [ObservableProperty] private TimeSpan? _quietHoursEndTime;
     [ObservableProperty] private string _status = "";
 
     public NotifyTabViewModel(MailIslandConfigHandler config)
@@ -43,8 +42,8 @@ public partial class NotifyTabViewModel : ObservableObject
         _notificationSpeechEnabled = config.Data.NotificationSpeechEnabled;
         _notifySummaryMode = config.Data.NotifySummaryMode;
         _quietHoursEnabled = config.Data.QuietHoursEnabled;
-        _quietHoursStart = config.Data.QuietHoursStart;
-        _quietHoursEnd = config.Data.QuietHoursEnd;
+        _quietHoursStartTime = ParseTime(config.Data.QuietHoursStart);
+        _quietHoursEndTime = ParseTime(config.Data.QuietHoursEnd);
     }
 
     public ObservableCollection<KeywordRule> Keywords { get; }
@@ -150,31 +149,26 @@ public partial class NotifyTabViewModel : ObservableObject
         _config.Save();
     }
 
-    partial void OnQuietHoursStartChanged(string value)
+    partial void OnQuietHoursStartTimeChanged(TimeSpan? value)
     {
-        if (!QuietHours.IsValidTime(value))
-        {
-            Status = "免打扰开始时间格式应为 HH:mm，例如 21:00。";
-            return;
-        }
+        if (value is not { } time) return;
 
-        _config.Data.QuietHoursStart = value;
+        _config.Data.QuietHoursStart = FormatTime(time);
         _config.Save();
-        Status = "";
     }
 
-    partial void OnQuietHoursEndChanged(string value)
+    partial void OnQuietHoursEndTimeChanged(TimeSpan? value)
     {
-        if (!QuietHours.IsValidTime(value))
-        {
-            Status = "免打扰结束时间格式应为 HH:mm，例如 07:00。";
-            return;
-        }
+        if (value is not { } time) return;
 
-        _config.Data.QuietHoursEnd = value;
+        _config.Data.QuietHoursEnd = FormatTime(time);
         _config.Save();
-        Status = "";
     }
+
+    private static TimeSpan? ParseTime(string? value) =>
+        TimeSpan.TryParse(value, out var time) ? time : null;
+
+    private static string FormatTime(TimeSpan time) => $"{time.Hours:00}:{time.Minutes:00}";
 
     /// <summary>添加一条关键词规则。</summary>
     public void AddKeyword()

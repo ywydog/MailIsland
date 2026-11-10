@@ -60,12 +60,17 @@
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Spacing="12">
                         <TextBlock Text="开始" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                        <TextBox Width="80" Text="{Binding QuietHoursStart, Mode=TwoWay}" Watermark="21:00" />
+                        <TimePicker SelectedTime="{Binding QuietHoursStartTime, Mode=TwoWay}"
+                                    ClockIdentifier="24HourClock"
+                                    MinWidth="140" />
                         <TextBlock Text="结束" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                        <TextBox Width="80" Text="{Binding QuietHoursEnd, Mode=TwoWay}" Watermark="07:00" />
-                        <TextBlock Text="格式：HH:mm，支持跨午夜" VerticalAlignment="Center"
-                                   FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                        <TimePicker SelectedTime="{Binding QuietHoursEndTime, Mode=TwoWay}"
+                                    ClockIdentifier="24HourClock"
+                                    MinWidth="140" />
                     </StackPanel>
+                    <TextBlock Text="支持跨午夜，例如 21:00 到次日 07:00。"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
                 </StackPanel>
             </controls:FASettingsExpander>
 
