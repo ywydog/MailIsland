@@ -13,6 +13,10 @@ public interface IMailClientService
     Task<List<MailMessage>> FetchRecentAsync(
         MailAccountSettings account, string plainPassword, int count, bool includeBodies, CancellationToken ct);
 
+    /// <summary>拉取“已发送”文件夹中的最近邮件。</summary>
+    Task<List<MailMessage>> FetchSentAsync(
+        MailAccountSettings account, string plainPassword, int count, CancellationToken ct);
+
     /// <summary>为已拉取的邮件补充正文（仅对需要推送的新邮件调用，避免每轮全量下载）。</summary>
     Task FillBodiesAsync(
         MailAccountSettings account, string plainPassword, IReadOnlyList<MailMessage> mails, CancellationToken ct);

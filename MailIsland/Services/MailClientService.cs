@@ -43,36 +43,60 @@ public sealed class MailClientService : IMailClientService
     public async Task<List<MailMessage>> FetchRecentAsync(
         MailAccountSettings account, string plainPassword, int count, bool includeBodies, CancellationToken ct)
     {
-        var result = new List<MailMessage>();
-
         using var client = new ImapClient();
         await ConnectAsync(client, account, plainPassword, ct);
 
         var inbox = client.Inbox;
         await inbox.OpenAsync(FolderAccess.ReadOnly, ct);
 
-        var total = inbox.Count;
+        var result = await FetchFromFolderAsync(inbox, count, includeBodies, ct);
+
+        await client.DisconnectAsync(true, ct);
+        return result;
+    }
+
+    /// <summary>拉取“已发送”文件夹中的最近邮件。</summary>
+    public async Task<List<MailMessage>> FetchSentAsync(
+        MailAccountSettings account, string plainPassword, int count, CancellationToken ct)
+    {
+        using var client = new ImapClient();
+        await ConnectAsync(client, account, plainPassword, ct);
+
+        var sent = await FindSentFolderAsync(client, ct)
+                   ?? throw new InvalidOperationException("未找到“已发送”文件夹。");
+
+        await sent.OpenAsync(FolderAccess.ReadOnly, ct);
+        var result = await FetchFromFolderAsync(sent, count, includeBodies: true, ct);
+
+        await client.DisconnectAsync(true, ct);
+        return result;
+    }
+
+    private static async Task<List<MailMessage>> FetchFromFolderAsync(
+        IMailFolder folder, int count, bool includeBodies, CancellationToken ct)
+    {
+        var result = new List<MailMessage>();
+
+        var total = folder.Count;
         var startIndex = Math.Max(0, total - Math.Max(0, count));
 
         // 无邮件时避免越界
-        if (startIndex < total)
-        {
-            var fetchItems = MessageSummaryItems.UniqueId | MessageSummaryItems.Envelope |
-                             MessageSummaryItems.Flags | MessageSummaryItems.BodyStructure;
-            var summaries = await inbox.FetchAsync(startIndex, total - 1, fetchItems, ct);
+        if (startIndex >= total) return result;
 
-            foreach (var s in summaries.OrderByDescending(s => s.UniqueId))
+        var fetchItems = MessageSummaryItems.UniqueId | MessageSummaryItems.Envelope |
+                         MessageSummaryItems.Flags | MessageSummaryItems.BodyStructure;
+        var summaries = await folder.FetchAsync(startIndex, total - 1, fetchItems, ct);
+
+        foreach (var summary in summaries.OrderByDescending(s => s.UniqueId))
+        {
+            var message = CreateMessage(summary);
+            if (includeBodies)
             {
-                var message = CreateMessage(s);
-                if (includeBodies)
-                {
-                    await PopulateBodyAsync(inbox, s, message, ct);
-                }
-                result.Add(message);
+                await PopulateBodyAsync(folder, summary, message, ct);
             }
+            result.Add(message);
         }
 
-        await client.DisconnectAsync(true, ct);
         return result;
     }
 
@@ -236,6 +260,7 @@ public sealed class MailClientService : IMailClientService
             Uid = summary.UniqueId.Id,
             SenderName = summary.Envelope?.From.Mailboxes.FirstOrDefault()?.Name ?? "",
             SenderEmail = summary.Envelope?.From.Mailboxes.FirstOrDefault()?.Address ?? "",
+            ToDisplay = FormatAddresses(summary.Envelope?.To),
             Subject = subject,
             Date = summary.Envelope?.Date?.ToOffset(TimeSpan.Zero) ?? DateTimeOffset.MinValue,
             IsUnread = !(summary.Flags?.HasFlag(MessageFlags.Seen) ?? false),
@@ -243,6 +268,17 @@ public sealed class MailClientService : IMailClientService
             Attachments = attachments,
             InlineParts = inlineParts,
         };
+    }
+
+    /// <summary>把收件人列表格式化为展示文本。</summary>
+    private static string FormatAddresses(InternetAddressList? addresses)
+    {
+        if (addresses == null || addresses.Count == 0) return "";
+
+        return string.Join(", ", addresses.Mailboxes.Select(mailbox =>
+            string.IsNullOrWhiteSpace(mailbox.Name)
+                ? mailbox.Address
+                : $"{mailbox.Name} <{mailbox.Address}>"));
     }
 
     /// <summary>收集正文内嵌图片（带 Content-ID 的 image/* 部件），供 cid: 引用解析。</summary>

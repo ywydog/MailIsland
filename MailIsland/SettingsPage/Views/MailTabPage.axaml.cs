@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Avalonia.Platform.Storage;
 using ClassIsland.Core.Abstractions.Controls;
 using ClassIsland.Core.Attributes;
 using ClassIsland.Shared;
@@ -21,7 +20,6 @@ namespace MailIsland.SettingsPage.Views;
 public partial class MailTabPage : SettingsPageBase
 {
     private readonly MailTabViewModel _vm;
-    private ComposeViewModel? _compose;
 
     public MailTabPage()
     {
@@ -37,6 +35,11 @@ public partial class MailTabPage : SettingsPageBase
         AccountCombo.SelectionChanged += OnAccountComboChanged;
         RefreshButton.Click += OnRefreshClick;
         MessageList.SelectionChanged += OnMessageSelectionChanged;
+        ComposeView.Closed += (_, _) =>
+        {
+            MessageList.SelectedItem = null;
+            ShowList();
+        };
 
         if (_vm.Accounts.FirstOrDefault() is { } first)
         {
@@ -135,9 +138,7 @@ public partial class MailTabPage : SettingsPageBase
 
     private void OnLoadImagesOnceClick(object? sender, RoutedEventArgs e) => _vm.LoadImagesOnce();
 
-    // ---------- 写邮件 ----------
-
-    private void OnComposeClick(object? sender, RoutedEventArgs e) => OpenCompose(null, null, null);
+    // ---------- 回复 / 转发（复用发件箱页的写邮件控件） ----------
 
     private void OnReplyClick(object? sender, RoutedEventArgs e)
     {
@@ -154,7 +155,7 @@ public partial class MailTabPage : SettingsPageBase
         OpenCompose(null, PrefixSubject(mail.Subject, "Fwd:"), BuildQuote(mail));
     }
 
-    private void OpenCompose(string? to, string? subject, string? body)
+    private void OpenCompose(string? to, string? subject, string? quote)
     {
         if (_vm.SelectedAccount is not { } account)
         {
@@ -162,84 +163,10 @@ public partial class MailTabPage : SettingsPageBase
             return;
         }
 
-        _compose = new ComposeViewModel(
-            account,
-            IAppHost.GetService<MailIslandConfigHandler>(),
-            IAppHost.GetService<ISmtpClientService>(),
-            IAppHost.GetService<IMailClientService>());
-        _compose.ApplyPrefill(to, subject, body);
-
-        ComposeView.DataContext = _compose;
-        DiscardOverlay.IsVisible = false;
-
         HeaderBar.IsVisible = false;
         ListView.IsVisible = false;
         DetailView.IsVisible = false;
-        ComposeView.IsVisible = true;
-    }
-
-    private void OnComposeBackClick(object? sender, RoutedEventArgs e)
-    {
-        if (_compose?.HasContent == true)
-        {
-            DiscardOverlay.IsVisible = true;
-            return;
-        }
-
-        CloseCompose();
-    }
-
-    private void OnDiscardCancelClick(object? sender, RoutedEventArgs e) => DiscardOverlay.IsVisible = false;
-
-    private void OnDiscardConfirmClick(object? sender, RoutedEventArgs e)
-    {
-        DiscardOverlay.IsVisible = false;
-        CloseCompose();
-    }
-
-    private void CloseCompose()
-    {
-        ComposeView.IsVisible = false;
-        ComposeView.DataContext = null;
-        _compose = null;
-
-        MessageList.SelectedItem = null;
-        ShowList();
-    }
-
-    private async void OnSendClick(object? sender, RoutedEventArgs e)
-    {
-        if (_compose is null) return;
-
-        if (await _compose.SendAsync())
-        {
-            CloseCompose();
-            _vm.Status = "已发送";
-        }
-    }
-
-    private async void OnAddAttachmentClick(object? sender, RoutedEventArgs e)
-    {
-        if (_compose is null) return;
-
-        var topLevel = TopLevel.GetTopLevel(this);
-        if (topLevel is null) return;
-
-        var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
-        {
-            Title = "选择附件",
-            AllowMultiple = true,
-        });
-
-        _compose.AddAttachments(files.Select(file => file.Path.LocalPath));
-    }
-
-    private void OnRemoveComposeAttachmentClick(object? sender, RoutedEventArgs e)
-    {
-        if (_compose is not null && sender is Button { DataContext: ComposeAttachment attachment })
-        {
-            _compose.RemoveAttachment(attachment);
-        }
+        ComposeView.Begin(account, to, subject, quote);
     }
 
     private static string PrefixSubject(string subject, string prefix)

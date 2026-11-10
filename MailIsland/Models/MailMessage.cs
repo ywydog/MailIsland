@@ -11,6 +11,8 @@ public sealed class MailMessage : INotifyPropertyChanged
     public uint Uid { get; set; }
     public string SenderName { get; set; } = "";
     public string SenderEmail { get; set; } = "";
+    /// <summary>收件人展示文本（发件箱列表使用）。</summary>
+    public string ToDisplay { get; set; } = "";
     public string Subject { get; set; } = "";
     public DateTimeOffset Date { get; set; }
     public bool IsUnread
@@ -41,6 +43,10 @@ public sealed class MailMessage : INotifyPropertyChanged
     /// <summary>主题显示文本（空主题给出占位）。</summary>
     [JsonIgnore]
     public string SubjectDisplay => string.IsNullOrWhiteSpace(Subject) ? "(无主题)" : Subject;
+
+    /// <summary>收件人显示文本。</summary>
+    [JsonIgnore]
+    public string RecipientsDisplay => string.IsNullOrWhiteSpace(ToDisplay) ? "(无收件人)" : ToDisplay;
 
     /// <summary>本地时间文本，供列表展示。</summary>
     [JsonIgnore]

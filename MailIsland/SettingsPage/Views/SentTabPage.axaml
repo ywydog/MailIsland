@@ -1,0 +1,158 @@
+<ci:SettingsPageBase x:Class="MailIsland.SettingsPage.Views.SentTabPage"
+                     xmlns="https://github.com/avaloniaui"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                     xmlns:ci="http://classisland.tech/schemas/xaml/core"
+                     xmlns:controls="clr-namespace:MailIsland.Controls">
+
+    <Grid RowDefinitions="Auto,*">
+        <!-- 顶部：账号、写邮件、刷新 -->
+        <Grid x:Name="HeaderBar"
+              Grid.Row="0"
+              ColumnDefinitions="Auto,Auto,*,Auto,Auto"
+              Margin="0,0,0,8">
+            <TextBlock Grid.Column="0"
+                       Text="账号"
+                       VerticalAlignment="Center"
+                       Margin="0,0,8,0"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+            <ComboBox Grid.Column="1"
+                      x:Name="AccountCombo"
+                      MinWidth="220"
+                      VerticalAlignment="Center">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Spacing="1">
+                            <TextBlock Text="{Binding DisplayName}" />
+                            <TextBlock Text="{Binding Email}"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+
+            <Button Grid.Column="3"
+                    Content="写邮件"
+                    Margin="0,0,8,0"
+                    VerticalAlignment="Center"
+                    Click="OnComposeClick"
+                    ToolTip.Tip="写一封新邮件" />
+            <Button Grid.Column="4"
+                    Content="刷新"
+                    VerticalAlignment="Center"
+                    Click="OnRefreshClick"
+                    ToolTip.Tip="重新加载已发送邮件" />
+        </Grid>
+
+        <!-- 已发送列表 -->
+        <Border x:Name="ListView"
+                Grid.Row="1"
+                CornerRadius="8"
+                Padding="8"
+                Background="{DynamicResource LayerFillColorDefaultBrush}">
+            <DockPanel>
+                <TextBlock x:Name="StatusText"
+                           DockPanel.Dock="Top"
+                           Text="{Binding Status}"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,6"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                <ListBox x:Name="MessageList" ItemsSource="{Binding Messages}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Grid ColumnDefinitions="*,Auto" Margin="0,4">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="{Binding SubjectDisplay}"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding RecipientsDisplay}"
+                                               TextTrimming="CharacterEllipsis"
+                                               FontSize="12"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                </StackPanel>
+                                <TextBlock Grid.Column="1"
+                                           Text="{Binding DateDisplay}"
+                                           Margin="8,0,0,0"
+                                           FontSize="11"
+                                           VerticalAlignment="Top"
+                                           Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+        </Border>
+
+        <!-- 已发送详情 -->
+        <Grid x:Name="DetailView"
+              Grid.Row="1"
+              RowDefinitions="Auto,*"
+              IsVisible="False">
+            <Button Grid.Row="0"
+                    Content="返回"
+                    HorizontalAlignment="Left"
+                    Margin="0,0,0,8"
+                    Click="OnBackClick"
+                    ToolTip.Tip="返回已发送列表" />
+            <Border Grid.Row="1"
+                    CornerRadius="8"
+                    Padding="16"
+                    Background="{DynamicResource LayerFillColorDefaultBrush}">
+                <ScrollViewer>
+                    <StackPanel Spacing="8">
+                        <TextBlock x:Name="DetailSubject"
+                                   FontSize="18"
+                                   FontWeight="SemiBold"
+                                   TextWrapping="Wrap" />
+                        <TextBlock x:Name="DetailTo"
+                                   FontSize="13"
+                                   TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBlock x:Name="DetailDate"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <ContentControl x:Name="BodyHost" />
+
+                        <TextBlock x:Name="AttachmentHeader"
+                                   Text="附件"
+                                   FontSize="13"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   IsVisible="False" />
+                        <ItemsControl ItemsSource="{Binding Attachments}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Margin="0,2"
+                                            Padding="10,6"
+                                            CornerRadius="6"
+                                            Background="{DynamicResource LayerFillColorDefaultBrush}">
+                                        <Grid ColumnDefinitions="*,Auto,Auto">
+                                            <TextBlock Grid.Column="0"
+                                                       Text="{Binding FileName}"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding SizeDisplay}"
+                                                       Margin="8,0"
+                                                       FontSize="12"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                            <Button Grid.Column="2"
+                                                    Content="保存到桌面"
+                                                    Click="OnDownloadAttachmentClick" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+
+        <!-- 写邮件（复用控件） -->
+        <controls:ComposeControl x:Name="ComposeView"
+                                 Grid.Row="1"
+                                 IsVisible="False" />
+    </Grid>
+</ci:SettingsPageBase>

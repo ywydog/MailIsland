@@ -1,0 +1,156 @@
+<UserControl x:Class="MailIsland.Controls.ComposeControl"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid RowDefinitions="Auto,*">
+        <StackPanel Grid.Row="0"
+                    Orientation="Horizontal"
+                    Spacing="8"
+                    Margin="0,0,0,8">
+            <Button Content="返回"
+                    Click="OnBackClick"
+                    ToolTip.Tip="返回列表" />
+            <TextBlock Text="写邮件"
+                       FontSize="16"
+                       FontWeight="SemiBold"
+                       VerticalAlignment="Center" />
+        </StackPanel>
+
+        <Border Grid.Row="1"
+                CornerRadius="8"
+                Padding="16"
+                Background="{DynamicResource LayerFillColorDefaultBrush}">
+            <ScrollViewer>
+                <StackPanel Spacing="10">
+                    <Grid ColumnDefinitions="Auto,*">
+                        <TextBlock Text="收件人"
+                                   Width="56"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBox Grid.Column="1"
+                                 Text="{Binding To, Mode=TwoWay}"
+                                 Watermark="多个地址用逗号或分号分隔" />
+                    </Grid>
+                    <Grid ColumnDefinitions="Auto,*">
+                        <TextBlock Text="抄送"
+                                   Width="56"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBox Grid.Column="1"
+                                 Text="{Binding Cc, Mode=TwoWay}"
+                                 Watermark="可留空" />
+                    </Grid>
+                    <Grid ColumnDefinitions="Auto,*">
+                        <TextBlock Text="密送"
+                                   Width="56"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBox Grid.Column="1"
+                                 Text="{Binding Bcc, Mode=TwoWay}"
+                                 Watermark="可留空" />
+                    </Grid>
+                    <Grid ColumnDefinitions="Auto,*">
+                        <TextBlock Text="主题"
+                                   Width="56"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBox Grid.Column="1"
+                                 Text="{Binding Subject, Mode=TwoWay}"
+                                 Watermark="邮件主题" />
+                    </Grid>
+
+                    <TextBox Text="{Binding Body, Mode=TwoWay}"
+                             AcceptsReturn="True"
+                             TextWrapping="Wrap"
+                             Height="220"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto"
+                             Watermark="正文" />
+
+                    <Grid ColumnDefinitions="Auto,*">
+                        <Button Content="添加附件"
+                                Click="OnAddAttachmentClick"
+                                ToolTip.Tip="从本地选择文件" />
+                        <TextBlock Grid.Column="1"
+                                   Text="{Binding AttachmentSummary}"
+                                   Margin="8,0,0,0"
+                                   VerticalAlignment="Center"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    </Grid>
+
+                    <ItemsControl ItemsSource="{Binding Attachments}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Margin="0,2"
+                                        Padding="10,6"
+                                        CornerRadius="6"
+                                        Background="{DynamicResource LayerFillColorDefaultBrush}">
+                                    <Grid ColumnDefinitions="*,Auto,Auto">
+                                        <TextBlock Grid.Column="0"
+                                                   Text="{Binding FileName}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding SizeDisplay}"
+                                                   Margin="8,0"
+                                                   FontSize="12"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                        <Button Grid.Column="2"
+                                                Content="移除"
+                                                Click="OnRemoveAttachmentClick" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <CheckBox Content="保存到“已发送”"
+                              IsChecked="{Binding SaveSentCopy, Mode=TwoWay}" />
+
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="发送"
+                                Classes="accent"
+                                Click="OnSendClick"
+                                IsEnabled="{Binding !IsSending}" />
+                        <Button Content="取消"
+                                Click="OnBackClick" />
+                    </StackPanel>
+
+                    <TextBlock Text="{Binding Status}"
+                               TextWrapping="Wrap"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <!-- 放弃确认浮层 -->
+        <Border x:Name="DiscardOverlay"
+                Grid.RowSpan="2"
+                IsVisible="False"
+                Background="#66000000">
+            <Border Padding="20"
+                    CornerRadius="8"
+                    MaxWidth="360"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="放弃这封邮件？"
+                               FontSize="16"
+                               FontWeight="SemiBold" />
+                    <TextBlock Text="已填写的内容不会保存。"
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <StackPanel Orientation="Horizontal"
+                                Spacing="8"
+                                HorizontalAlignment="Right">
+                        <Button Content="继续编辑" Click="OnDiscardCancelClick" />
+                        <Button Content="放弃" Classes="accent" Click="OnDiscardConfirmClick" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Border>
+    </Grid>
+</UserControl>

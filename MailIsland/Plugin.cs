@@ -51,6 +51,7 @@ public partial class Plugin : PluginBase
         // 注册设置页（多个独立设置页，[Group] 特性自动归入上述分组）
         services.AddSettingsPage<SettingsPage.Views.AccountTabPage>();
         services.AddSettingsPage<SettingsPage.Views.MailTabPage>();
+        services.AddSettingsPage<SettingsPage.Views.SentTabPage>();
         services.AddSettingsPage<SettingsPage.Views.NotifyTabPage>();
 
         // 应用停止时保存配置
