@@ -10,39 +10,53 @@
     </ci:SettingsPageBase.Resources>
 
     <Grid RowDefinitions="Auto,*">
-        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
-            <StackPanel Orientation="Horizontal" Spacing="12">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <TextBlock Text="收件账号" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                    <ComboBox x:Name="AccountCombo" MinWidth="220">
-                        <ComboBox.ItemTemplate>
-                            <DataTemplate>
-                                <StackPanel Spacing="1">
-                                    <TextBlock Text="{Binding DisplayName}" />
-                                    <TextBlock Text="{Binding Email}"
-                                               FontSize="11"
-                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                </StackPanel>
-                            </DataTemplate>
-                        </ComboBox.ItemTemplate>
-                    </ComboBox>
-                </StackPanel>
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto" Margin="0,0,0,8">
+            <TextBlock Grid.Column="0"
+                       Text="收件账号"
+                       VerticalAlignment="Center"
+                       Margin="0,0,8,0"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+            <ComboBox Grid.Column="1"
+                      x:Name="AccountCombo"
+                      MinWidth="220"
+                      VerticalAlignment="Center">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Spacing="1">
+                            <TextBlock Text="{Binding DisplayName}" />
+                            <TextBlock Text="{Binding Email}"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
 
-                <TextBox x:Name="SearchBox"
-                         Width="200"
-                         VerticalAlignment="Center"
-                         Watermark="搜索发件人、主题或正文"
-                         Text="{Binding SearchText, Mode=TwoWay}" />
+            <TextBox Grid.Column="2"
+                     x:Name="SearchBox"
+                     Width="180"
+                     Margin="12,0,0,0"
+                     VerticalAlignment="Center"
+                     Watermark="搜索发件人、主题或正文"
+                     Text="{Binding SearchText, Mode=TwoWay}" />
 
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                    <TextBlock Text="加载正文图片" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                    <ToggleSwitch IsChecked="{Binding LoadBodyImages, Mode=TwoWay}"
-                                  ToolTip.Tip="远程图片可能包含跟踪像素，默认关闭" />
-                </StackPanel>
+            <StackPanel Grid.Column="3"
+                        Orientation="Horizontal"
+                        Spacing="6"
+                        Margin="12,0,0,0"
+                        VerticalAlignment="Center">
+                <TextBlock Text="加载正文图片"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                <ToggleSwitch IsChecked="{Binding LoadBodyImages, Mode=TwoWay}"
+                              VerticalAlignment="Center"
+                              ToolTip.Tip="远程图片可能包含跟踪像素，默认关闭" />
             </StackPanel>
-            <Button x:Name="RefreshButton"
-                    Grid.Column="1"
+
+            <Button Grid.Column="5"
+                    x:Name="RefreshButton"
                     Content="刷新邮件"
+                    VerticalAlignment="Center"
                     IsEnabled="{Binding !IsLoading}"
                     ToolTip.Tip="重新从服务器收取最近邮件" />
         </Grid>
@@ -64,24 +78,27 @@
                     <ListBox x:Name="MessageList" ItemsSource="{Binding Messages}">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,4">
-                                    <TextBlock Grid.Column="0"
-                                               Text="●"
-                                               IsVisible="{Binding IsUnread}"
-                                               VerticalAlignment="Top"
-                                               Margin="0,2,6,0"
-                                               FontSize="12"
-                                               Foreground="{DynamicResource SystemAccentColor}" />
-                                    <StackPanel Grid.Column="1" Spacing="2">
-                                        <TextBlock Text="{Binding SubjectDisplay}"
-                                                   TextTrimming="CharacterEllipsis"
-                                                   FontWeight="{Binding IsUnread, Converter={StaticResource UnreadBoldConverter}}" />
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,4">
+                                    <StackPanel Grid.Column="0" Spacing="2">
+                                        <Grid ColumnDefinitions="Auto,*">
+                                            <Ellipse Grid.Column="0"
+                                                     Width="8"
+                                                     Height="8"
+                                                     Margin="0,0,6,0"
+                                                     VerticalAlignment="Center"
+                                                     Fill="#D13438"
+                                                     IsVisible="{Binding IsUnread}" />
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding SubjectDisplay}"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       FontWeight="{Binding IsUnread, Converter={StaticResource UnreadBoldConverter}}" />
+                                        </Grid>
                                         <TextBlock Text="{Binding SenderDisplay}"
                                                    TextTrimming="CharacterEllipsis"
                                                    FontSize="12"
                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                     </StackPanel>
-                                    <StackPanel Grid.Column="2"
+                                    <StackPanel Grid.Column="1"
                                                 Spacing="2"
                                                 Margin="8,0,0,0"
                                                 HorizontalAlignment="Right">

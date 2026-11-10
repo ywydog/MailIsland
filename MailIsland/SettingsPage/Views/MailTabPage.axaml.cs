@@ -68,11 +68,12 @@ public partial class MailTabPage : SettingsPageBase
 
         DetailSubject.Text = msg.SubjectDisplay;
 
+        var senderName = msg.SenderName.Trim().Trim('"').Trim();
         var from = string.IsNullOrWhiteSpace(msg.SenderEmail)
             ? msg.SenderDisplay
-            : string.IsNullOrWhiteSpace(msg.SenderName)
+            : string.IsNullOrWhiteSpace(senderName)
                 ? msg.SenderEmail
-                : $"{msg.SenderName} <{msg.SenderEmail}>";
+                : $"{senderName} <{msg.SenderEmail}>";
         DetailFrom.Text = $"发件人：{from}";
         DetailDate.Text = msg.Date == default
             ? "时间：未知"

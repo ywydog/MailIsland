@@ -294,8 +294,31 @@ public partial class MailTabViewModel : ObservableObject
             Attachments.Add(attachment);
         }
 
+        // 打开邮件即视为已读：本地立即更新，同时同步到服务器
+        if (value.IsUnread)
+        {
+            value.IsUnread = false;
+            _ = MarkAsReadAsync(value);
+        }
+
         var body = value.HasHtml ? value.HtmlBody : null;
         BodyContent = HtmlToAvaloniaRenderer.Build(
             body, value.TextBody, LoadBodyImages, CreateInlineResolver(value));
+    }
+
+    private async Task MarkAsReadAsync(MailMessage mail)
+    {
+        if (SelectedAccount is not { } acc) return;
+        if (string.IsNullOrWhiteSpace(acc.EncryptedPassword)) return;
+
+        try
+        {
+            var plainPassword = _config.Protector.Decrypt(acc.EncryptedPassword);
+            await _mail.MarkAsReadAsync(acc, plainPassword, mail.Uid, CancellationToken.None);
+        }
+        catch
+        {
+            // 同步失败不打扰用户，下次刷新仍按服务器状态显示
+        }
     }
 }

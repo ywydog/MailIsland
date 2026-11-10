@@ -19,4 +19,8 @@ public interface IMailClientService
     /// <summary>下载指定邮件的单个附件。</summary>
     Task<byte[]> DownloadAttachmentAsync(
         MailAccountSettings account, string plainPassword, uint uid, string partSpecifier, CancellationToken ct);
+
+    /// <summary>把邮件标记为已读（服务器端 \Seen）。</summary>
+    Task MarkAsReadAsync(
+        MailAccountSettings account, string plainPassword, uint uid, CancellationToken ct);
 }

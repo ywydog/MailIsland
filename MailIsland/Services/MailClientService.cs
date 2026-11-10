@@ -144,6 +144,20 @@ public sealed class MailClientService : IMailClientService
         return stream.ToArray();
     }
 
+    /// <summary>把邮件标记为已读（服务器端 \Seen）。</summary>
+    public async Task MarkAsReadAsync(
+        MailAccountSettings account, string plainPassword, uint uid, CancellationToken ct)
+    {
+        using var client = new ImapClient();
+        await ConnectAsync(client, account, plainPassword, ct);
+
+        var inbox = client.Inbox;
+        await inbox.OpenAsync(FolderAccess.ReadWrite, ct);
+        await inbox.AddFlagsAsync(new UniqueId(uid), MessageFlags.Seen, silent: true, ct);
+
+        await client.DisconnectAsync(true, ct);
+    }
+
     private async Task ConnectAsync(ImapClient client, MailAccountSettings account, string plainPassword, CancellationToken ct)
     {
         // 默认 120 秒过长，单个账号卡住会阻塞整轮同步
