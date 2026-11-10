@@ -2,6 +2,7 @@ using Avalonia.Threading;
 using MailIsland.ConfigHandlers;
 using MailIsland.Logic.Config;
 using MailIsland.Logic.Keyword;
+using MailIsland.Logic.Mail;
 using MailIsland.Models;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -152,21 +153,12 @@ public sealed class MailPollingService : BackgroundService
                 // 仅拉取新邮件正文；失败则不推进水位，下一轮重试
                 await _mail.FillBodiesAsync(account, plainPassword, newMails, ct);
 
+                // 自动化按每封新邮件触发，不受提醒开关与免打扰影响
                 foreach (var mail in newMails)
                 {
-                    var capturedAccount = account;
                     var capturedMail = mail;
                     RunOnUiThread(() =>
                     {
-                        try
-                        {
-                            TryNotify(capturedAccount, capturedMail);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex, "推送新邮件提醒失败");
-                        }
-
                         try
                         {
                             NewMailReceived?.Invoke(this, capturedMail);
@@ -177,6 +169,10 @@ public sealed class MailPollingService : BackgroundService
                         }
                     });
                 }
+
+                var capturedAccount = account;
+                var capturedMails = newMails.ToList();
+                RunOnUiThread(() => NotifyNewMails(capturedAccount, capturedMails));
             }
 
             _lastUidByAccount[prefix] = watermark;
@@ -192,41 +188,59 @@ public sealed class MailPollingService : BackgroundService
         }
     }
 
-    private void TryNotify(MailAccountSettings account, MailMessage mail)
+    /// <summary>按提醒规则推送新邮件；受全局开关、账号开关与免打扰时段约束。</summary>
+    private void NotifyNewMails(MailAccountSettings account, IReadOnlyList<MailMessage> mails)
     {
-        if (!_config.Data.NotifyEnabled) return;
+        if (!_config.Data.NotifyEnabled || !account.NotifyEnabled) return;
 
-        var rules = _config.Data.KeywordRules.Where(r => r.Enabled).ToList();
-        var hitKeyword = (string?)null;
-        var hit = false;
-
-        if (rules.Count == 0)
+        if (_config.Data.QuietHoursEnabled &&
+            QuietHours.IsQuietTime(DateTime.Now, _config.Data.QuietHoursStart, _config.Data.QuietHoursEnd))
         {
-            // 未配置关键词：默认全量提醒
-            hit = true;
-        }
-        else
-        {
-            var candidate = new MailCandidate(mail.SenderName, mail.SenderEmail, mail.Subject, mail.TextBody);
-            foreach (var rule in rules)
-            {
-                if (RuleMatches(candidate, rule))
-                {
-                    hit = true;
-                    hitKeyword = rule.Keyword;
-                    break;
-                }
-            }
+            return;
         }
 
-        if (hit)
+        var matched = new List<(MailMessage Mail, string? Keyword)>();
+        foreach (var mail in mails)
         {
-            _notifier.Notify(mail, account, _config.Data, !string.IsNullOrEmpty(hitKeyword), hitKeyword);
+            var (hit, keyword) = MatchKeyword(mail);
+            if (hit) matched.Add((mail, keyword));
+        }
+
+        if (matched.Count == 0) return;
+
+        // 多封新邮件可合并为一条，避免连续弹出刷屏
+        if (_config.Data.NotifySummaryMode && matched.Count > 1)
+        {
+            _notifier.NotifySummary(account, matched.Select(item => item.Mail).ToList(), _config.Data);
+            return;
+        }
+
+        foreach (var (mail, keyword) in matched)
+        {
+            _notifier.Notify(mail, account, _config.Data, !string.IsNullOrEmpty(keyword), keyword);
         }
     }
 
-    private static bool RuleMatches(MailCandidate candidate, KeywordRule rule) =>
-        KeywordMatcher.Matches(candidate, new[] { rule });
+    private (bool Hit, string? Keyword) MatchKeyword(MailMessage mail)
+    {
+        var rules = _config.Data.KeywordRules.Where(rule => rule.Enabled).ToList();
+        if (rules.Count == 0)
+        {
+            // 未配置关键词：默认全量提醒
+            return (true, null);
+        }
+
+        var candidate = new MailCandidate(mail.SenderName, mail.SenderEmail, mail.Subject, mail.TextBody);
+        foreach (var rule in rules)
+        {
+            if (KeywordMatcher.Matches(candidate, new[] { rule }))
+            {
+                return (true, rule.Keyword);
+            }
+        }
+
+        return (false, null);
+    }
 
     /// <summary>在 UI 线程上执行操作。已在 UI 线程则直接执行，否则通过 Dispatcher 投递。</summary>
     private void RunOnUiThread(Action action)

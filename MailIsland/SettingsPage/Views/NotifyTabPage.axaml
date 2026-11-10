@@ -42,6 +42,30 @@
                         <TextBlock Text="（默认关闭，避免朗读邮件内容）" VerticalAlignment="Center"
                                    FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
                     </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="合并提醒" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <ToggleSwitch IsChecked="{Binding NotifySummaryMode, Mode=TwoWay}" />
+                        <TextBlock Text="（同一轮多封新邮件只弹一条）" VerticalAlignment="Center"
+                                   FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                    </StackPanel>
+                </StackPanel>
+            </controls:FASettingsExpander>
+
+            <controls:FASettingsExpander Header="免打扰"
+                                       Description="在指定时段内不弹出提醒，自动化仍会正常触发">
+                <StackPanel Spacing="10">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="启用免打扰" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <ToggleSwitch IsChecked="{Binding QuietHoursEnabled, Mode=TwoWay}" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <TextBlock Text="开始" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBox Width="80" Text="{Binding QuietHoursStart, Mode=TwoWay}" Watermark="21:00" />
+                        <TextBlock Text="结束" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBox Width="80" Text="{Binding QuietHoursEnd, Mode=TwoWay}" Watermark="07:00" />
+                        <TextBlock Text="格式：HH:mm，支持跨午夜" VerticalAlignment="Center"
+                                   FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                    </StackPanel>
                 </StackPanel>
             </controls:FASettingsExpander>
 

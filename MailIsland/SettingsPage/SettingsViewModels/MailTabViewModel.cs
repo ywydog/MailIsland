@@ -18,6 +18,7 @@ public partial class MailTabViewModel : ObservableObject
     private readonly MailCacheStore _cache;
     private readonly List<MailMessage> _allMails = new();
     private readonly Dictionary<string, byte[]?> _inlineImageCache = new(StringComparer.OrdinalIgnoreCase);
+    private bool _loadImagesForCurrentMail;
 
     private CancellationTokenSource? _loadCts;
 
@@ -30,6 +31,8 @@ public partial class MailTabViewModel : ObservableObject
     [ObservableProperty] private bool _loadBodyImages;
     [ObservableProperty] private string? _lastSavedFilePath;
     [ObservableProperty] private bool _hasSavedAttachment;
+    [ObservableProperty] private bool _unreadOnly;
+    [ObservableProperty] private bool _canLoadImagesOnce;
 
     public MailTabViewModel(
         MailIslandConfigHandler config,
@@ -64,6 +67,8 @@ public partial class MailTabViewModel : ObservableObject
         Messages.Clear();
         _allMails.Clear();
         _inlineImageCache.Clear();
+        _loadImagesForCurrentMail = false;
+        CanLoadImagesOnce = false;
         HasSavedAttachment = false;
         LastSavedFilePath = null;
 
@@ -82,18 +87,38 @@ public partial class MailTabViewModel : ObservableObject
     /// <summary>按发件人、主题或正文过滤当前邮件列表。</summary>
     partial void OnSearchTextChanged(string value) => ApplyFilter();
 
+    partial void OnUnreadOnlyChanged(bool value) => ApplyFilter();
+
     /// <summary>切换正文图片加载开关并重建当前正文。</summary>
     partial void OnLoadBodyImagesChanged(bool value)
     {
         _config.Data.LoadBodyImages = value;
         _config.Save();
 
+        _loadImagesForCurrentMail = false;
+        CanLoadImagesOnce = !value && SelectedMessage?.HasHtml == true;
+
         if (SelectedMessage is { } mail)
         {
-            var body = mail.HasHtml ? mail.HtmlBody : null;
-            BodyContent = HtmlToAvaloniaRenderer.Build(
-                body, mail.TextBody, value, CreateInlineResolver(mail));
+            RebuildBody(mail);
         }
+    }
+
+    /// <summary>仅为当前邮件加载一次图片，不改变全局设置。</summary>
+    public void LoadImagesOnce()
+    {
+        if (SelectedMessage is not { } mail) return;
+
+        _loadImagesForCurrentMail = true;
+        CanLoadImagesOnce = false;
+        RebuildBody(mail);
+    }
+
+    private void RebuildBody(MailMessage mail)
+    {
+        var body = mail.HasHtml ? mail.HtmlBody : null;
+        BodyContent = HtmlToAvaloniaRenderer.Build(
+            body, mail.TextBody, LoadBodyImages || _loadImagesForCurrentMail, CreateInlineResolver(mail));
     }
 
     /// <summary>按需下载并缓存正文内嵌图片（cid: 引用）。</summary>
@@ -251,9 +276,15 @@ public partial class MailTabViewModel : ObservableObject
     private void ApplyFilter()
     {
         var query = SearchText?.Trim() ?? "";
+        IEnumerable<MailMessage> source = _allMails;
+        if (UnreadOnly)
+        {
+            source = source.Where(mail => mail.IsUnread);
+        }
+
         var items = query.Length == 0
-            ? _allMails
-            : _allMails.Where(m => Matches(m, query)).ToList();
+            ? source.ToList()
+            : source.Where(mail => Matches(mail, query)).ToList();
 
         Messages.Clear();
         foreach (var message in items) Messages.Add(message);
@@ -287,6 +318,8 @@ public partial class MailTabViewModel : ObservableObject
         BodyContent = null;
         Attachments.Clear();
         _inlineImageCache.Clear();
+        _loadImagesForCurrentMail = false;
+        CanLoadImagesOnce = false;
         if (value == null) return;
 
         foreach (var attachment in value.Attachments)
@@ -301,9 +334,8 @@ public partial class MailTabViewModel : ObservableObject
             _ = MarkAsReadAsync(value);
         }
 
-        var body = value.HasHtml ? value.HtmlBody : null;
-        BodyContent = HtmlToAvaloniaRenderer.Build(
-            body, value.TextBody, LoadBodyImages, CreateInlineResolver(value));
+        CanLoadImagesOnce = !LoadBodyImages && value.HasHtml;
+        RebuildBody(value);
     }
 
     private async Task MarkAsReadAsync(MailMessage mail)

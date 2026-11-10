@@ -50,6 +50,33 @@ public sealed class MailNotificationProvider : NotificationProviderBase
         ShowNotification(request);
     }
 
+    /// <summary>把同一轮多封新邮件合并为一条提醒。</summary>
+    public void NotifySummary(
+        MailAccountSettings account, IReadOnlyList<MailMessage> mails, MailIslandConfigData config)
+    {
+        if (mails.Count == 0) return;
+
+        var title = $"{account.DisplayName} 收到 {mails.Count} 封新邮件";
+        var mask = NotificationContent.CreateSimpleTextContent(title);
+        mask.IsSpeechEnabled = config.NotificationSpeechEnabled;
+
+        var latest = mails[^1];
+        var body = BuildOverlayBody(latest, account, config.OverlayContentKind);
+        if (mails.Count > 1)
+        {
+            body = $"{body}（共 {mails.Count} 封）";
+        }
+
+        var overlay = BuildOverlayContent(body, config);
+        overlay.IsSpeechEnabled = config.NotificationSpeechEnabled;
+
+        ShowNotification(new NotificationRequest
+        {
+            MaskContent = mask,
+            OverlayContent = overlay,
+        });
+    }
+
     /// <summary>构建遮罩（标题）文本。</summary>
     private static string BuildMaskTitle(
         MailMessage mail,

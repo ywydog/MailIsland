@@ -89,6 +89,27 @@
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" Spacing="10">
+                        <TextBlock Text="新邮件提醒" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <ToggleSwitch x:Name="NotifyToggle" />
+                        <TextBlock Text="关闭后该账号不再弹出提醒，自动化仍会触发" VerticalAlignment="Center"
+                                   FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <TextBlock Text="回复引用原文" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <ToggleSwitch x:Name="QuoteToggle" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="签名" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBox x:Name="SignatureBox"
+                                 AcceptsReturn="True"
+                                 TextWrapping="Wrap"
+                                 Height="64"
+                                 Watermark="可选，自动附加到新邮件与回复" />
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Spacing="10">
                         <Button x:Name="TestButton" Content="连接验证" Classes="accent" />
                         <Button x:Name="SaveButton" Content="保存授权码" />
                     </StackPanel>

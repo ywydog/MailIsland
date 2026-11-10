@@ -133,6 +133,8 @@ public partial class MailTabPage : SettingsPageBase
 
     private void OnOpenFolderClick(object? sender, RoutedEventArgs e) => _vm.OpenContainingFolder();
 
+    private void OnLoadImagesOnceClick(object? sender, RoutedEventArgs e) => _vm.LoadImagesOnce();
+
     // ---------- 写邮件 ----------
 
     private void OnComposeClick(object? sender, RoutedEventArgs e) => OpenCompose(null, null, null);
@@ -141,7 +143,8 @@ public partial class MailTabPage : SettingsPageBase
     {
         if (_vm.SelectedMessage is not { } mail) return;
 
-        OpenCompose(mail.SenderEmail, PrefixSubject(mail.Subject, "Re:"), BuildQuote(mail));
+        var quote = _vm.SelectedAccount?.QuoteOriginal == true ? BuildQuote(mail) : null;
+        OpenCompose(mail.SenderEmail, PrefixSubject(mail.Subject, "Re:"), quote);
     }
 
     private void OnForwardClick(object? sender, RoutedEventArgs e)

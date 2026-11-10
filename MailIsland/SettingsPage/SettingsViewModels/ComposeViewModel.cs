@@ -58,12 +58,18 @@ public partial class ComposeViewModel : ObservableObject
         !string.IsNullOrWhiteSpace(Body) ||
         Attachments.Count > 0;
 
-    /// <summary>回复/转发时预填内容。</summary>
-    public void ApplyPrefill(string? to, string? subject, string? body)
+    /// <summary>回复/转发时预填内容；签名会自动附加在正文前。</summary>
+    public void ApplyPrefill(string? to, string? subject, string? quote)
     {
         if (!string.IsNullOrWhiteSpace(to)) To = to;
         if (!string.IsNullOrWhiteSpace(subject)) Subject = subject;
-        if (!string.IsNullOrWhiteSpace(body)) Body = body;
+
+        var parts = new List<string>();
+        var signature = _account.Signature?.Trim();
+        if (!string.IsNullOrWhiteSpace(signature)) parts.Add(signature);
+        if (!string.IsNullOrWhiteSpace(quote)) parts.Add(quote.Trim());
+
+        Body = string.Join("\n\n", parts);
     }
 
     public void AddAttachments(IEnumerable<string> paths)

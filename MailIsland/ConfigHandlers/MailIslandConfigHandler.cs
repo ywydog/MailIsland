@@ -62,6 +62,7 @@ public sealed class MailIslandConfigHandler
         {
             acc.Email = Unprotect(acc.Email, ref _needsSave);
             acc.DisplayName = Unprotect(acc.DisplayName, ref _needsSave);
+            acc.Signature = Unprotect(acc.Signature, ref _needsSave);
             acc.EncryptedPassword = MigratePassword(acc.EncryptedPassword);
         }
 
@@ -87,6 +88,10 @@ public sealed class MailIslandConfigHandler
         NotificationSpeechEnabled = Data.NotificationSpeechEnabled,
         LoadBodyImages = Data.LoadBodyImages,
         SaveSentCopy = Data.SaveSentCopy,
+        NotifySummaryMode = Data.NotifySummaryMode,
+        QuietHoursEnabled = Data.QuietHoursEnabled,
+        QuietHoursStart = Data.QuietHoursStart,
+        QuietHoursEnd = Data.QuietHoursEnd,
         Accounts = Data.Accounts.Select(a => new MailAccountSettings
         {
             Id = a.Id,
@@ -101,6 +106,9 @@ public sealed class MailIslandConfigHandler
             EncryptedPassword = a.EncryptedPassword,
             Enabled = a.Enabled,
             IsSelected = a.IsSelected,
+            NotifyEnabled = a.NotifyEnabled,
+            Signature = Protect(a.Signature),
+            QuoteOriginal = a.QuoteOriginal,
         }).ToList(),
         KeywordRules = Data.KeywordRules.Select(r => new KeywordRule
         {

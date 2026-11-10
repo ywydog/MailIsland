@@ -36,13 +36,20 @@
                 </ComboBox.ItemTemplate>
             </ComboBox>
 
-            <TextBox Grid.Column="2"
-                     x:Name="SearchBox"
-                     Width="180"
-                     Margin="12,0,0,0"
-                     VerticalAlignment="Center"
-                     Watermark="搜索发件人、主题或正文"
-                     Text="{Binding SearchText, Mode=TwoWay}" />
+            <StackPanel Grid.Column="2"
+                        Orientation="Horizontal"
+                        Spacing="8"
+                        Margin="12,0,0,0"
+                        VerticalAlignment="Center">
+                <TextBox x:Name="SearchBox"
+                         Width="170"
+                         VerticalAlignment="Center"
+                         Watermark="搜索发件人、主题或正文"
+                         Text="{Binding SearchText, Mode=TwoWay}" />
+                <CheckBox Content="仅看未读"
+                          VerticalAlignment="Center"
+                          IsChecked="{Binding UnreadOnly, Mode=TwoWay}" />
+            </StackPanel>
 
             <StackPanel Grid.Column="3"
                         Orientation="Horizontal"
@@ -153,6 +160,11 @@
                         Content="转发"
                         Click="OnForwardClick"
                         ToolTip.Tip="转发这封邮件" />
+                <Button x:Name="LoadImagesOnceButton"
+                        Content="显示图片"
+                        IsVisible="{Binding CanLoadImagesOnce}"
+                        Click="OnLoadImagesOnceClick"
+                        ToolTip.Tip="仅为这封邮件加载远程图片" />
             </StackPanel>
             <Border Grid.Row="1"
                     CornerRadius="8"

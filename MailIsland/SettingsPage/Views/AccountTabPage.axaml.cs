@@ -82,6 +82,21 @@ public partial class AccountTabPage : SettingsPageBase
         {
             if (_vm.Current != null) _vm.Current.SmtpUseSsl = SmtpSslCheck.IsChecked ?? true;
         };
+
+        NotifyToggle.IsCheckedChanged += (_, _) =>
+        {
+            if (_vm.Current != null) _vm.Current.NotifyEnabled = NotifyToggle.IsChecked ?? true;
+        };
+
+        QuoteToggle.IsCheckedChanged += (_, _) =>
+        {
+            if (_vm.Current != null) _vm.Current.QuoteOriginal = QuoteToggle.IsChecked ?? true;
+        };
+
+        SignatureBox.TextChanged += (_, _) =>
+        {
+            if (_vm.Current != null) _vm.Current.Signature = SignatureBox.Text ?? "";
+        };
     }
 
     private void RefreshList(bool clearPassword = false)
@@ -97,6 +112,9 @@ public partial class AccountTabPage : SettingsPageBase
         SmtpPortBox.Text = acc.SmtpPort.ToString();
         ImapSslCheck.IsChecked = acc.ImapUseSsl;
         SmtpSslCheck.IsChecked = acc.SmtpUseSsl;
+        NotifyToggle.IsChecked = acc.NotifyEnabled;
+        QuoteToggle.IsChecked = acc.QuoteOriginal;
+        SignatureBox.Text = acc.Signature;
 
         // 切换/新增/删除账号后必须清空授权码，避免把上一个账号的授权码写入当前账号
         if (clearPassword)

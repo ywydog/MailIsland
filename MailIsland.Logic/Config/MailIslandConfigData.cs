@@ -34,6 +34,14 @@ public sealed class MailIslandConfigData
     public bool LoadBodyImages { get; set; }
     /// <summary>发送邮件后是否保存到“已发送”。</summary>
     public bool SaveSentCopy { get; set; } = true;
+    /// <summary>多封新邮件合并为一条提醒。</summary>
+    public bool NotifySummaryMode { get; set; }
+    /// <summary>是否启用免打扰时段。</summary>
+    public bool QuietHoursEnabled { get; set; }
+    /// <summary>免打扰开始时间（HH:mm）。</summary>
+    public string QuietHoursStart { get; set; } = "21:00";
+    /// <summary>免打扰结束时间（HH:mm）。</summary>
+    public string QuietHoursEnd { get; set; } = "07:00";
 }
 
 /// <summary>账号设置。</summary>
@@ -52,4 +60,10 @@ public sealed class MailAccountSettings
     public string EncryptedPassword { get; set; } = "";
     public bool Enabled { get; set; } = true;
     public bool IsSelected { get; set; }
+    /// <summary>该账号是否推送新邮件提醒（不影响自动化）。</summary>
+    public bool NotifyEnabled { get; set; } = true;
+    /// <summary>邮件签名，自动附加到新邮件与回复。</summary>
+    public string Signature { get; set; } = "";
+    /// <summary>回复时是否引用原文。</summary>
+    public bool QuoteOriginal { get; set; } = true;
 }
