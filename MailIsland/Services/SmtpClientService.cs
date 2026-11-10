@@ -17,6 +17,24 @@ public sealed class SmtpClientService : ISmtpClientService
     public async Task SendAsync(
         MailAccountSettings account, string plainPassword, MimeMessage message, CancellationToken ct)
     {
+        await ExecuteAsync(account, plainPassword, async client =>
+        {
+            await client.SendAsync(message, ct);
+        }, ct);
+    }
+
+    public async Task VerifyConnectionAsync(
+        MailAccountSettings account, string plainPassword, CancellationToken ct)
+    {
+        await ExecuteAsync(account, plainPassword, _ => Task.CompletedTask, ct);
+    }
+
+    private async Task ExecuteAsync(
+        MailAccountSettings account,
+        string plainPassword,
+        Func<SmtpClient, Task> operation,
+        CancellationToken ct)
+    {
         if (string.IsNullOrWhiteSpace(account.SmtpServer))
         {
             throw new InvalidOperationException("该账号未设置 SMTP 服务器，请到“账号”页填写或重新选择邮箱预设。");
@@ -34,7 +52,7 @@ public sealed class SmtpClientService : ISmtpClientService
                 ct);
 
             await client.AuthenticateAsync(account.Email, plainPassword, ct);
-            await client.SendAsync(message, ct);
+            await operation(client);
             await client.DisconnectAsync(true, ct);
         }
         catch (AuthenticationException)
@@ -43,7 +61,7 @@ public sealed class SmtpClientService : ISmtpClientService
         }
         catch (SmtpCommandException ex)
         {
-            _logger.LogWarning(ex, "SMTP 发送被拒绝，状态码 {Code}", (int)ex.StatusCode);
+            _logger.LogWarning(ex, "SMTP 操作被拒绝，状态码 {Code}", (int)ex.StatusCode);
             throw new InvalidOperationException(Describe(ex));
         }
         catch (SmtpProtocolException ex)

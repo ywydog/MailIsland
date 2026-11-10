@@ -196,15 +196,16 @@ public sealed class MailClientService : IMailClientService
         await client.DisconnectAsync(true, ct);
     }
 
-    private static async Task<IMailFolder?> FindSentFolderAsync(ImapClient client, CancellationToken ct)
+    private async Task<IMailFolder?> FindSentFolderAsync(ImapClient client, CancellationToken ct)
     {
         try
         {
             return client.GetFolder(SpecialFolder.Sent);
         }
-        catch
+        catch (Exception ex)
         {
             // 优先使用服务器声明的特殊文件夹，失败时按名称回退
+            _logger.LogDebug(ex, "读取特殊已发送文件夹失败，按名称回退");
         }
 
         foreach (var ns in client.PersonalNamespaces)
@@ -215,9 +216,10 @@ public sealed class MailClientService : IMailClientService
                 var match = folders.FirstOrDefault(IsSentFolder);
                 if (match != null) return match;
             }
-            catch
+            catch (Exception ex)
             {
                 // 忽略单个命名空间失败
+                _logger.LogDebug(ex, "枚举邮件文件夹失败");
             }
         }
 

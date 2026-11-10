@@ -19,6 +19,7 @@ namespace MailIsland.SettingsPage.Views;
 public partial class AccountTabPage : SettingsPageBase
 {
     private readonly AccountTabViewModel _vm;
+    private bool _refreshing;
 
     public AccountTabPage()
     {
@@ -27,7 +28,8 @@ public partial class AccountTabPage : SettingsPageBase
         _vm = new AccountTabViewModel(
             IAppHost.GetService<MailIslandConfigHandler>(),
             IAppHost.GetService<IMailClientService>(),
-            IAppHost.GetService<MailCacheStore>());
+            IAppHost.GetService<MailCacheStore>(),
+            IAppHost.GetService<ISmtpClientService>());
         DataContext = _vm;
 
         SetupControls();
@@ -77,54 +79,79 @@ public partial class AccountTabPage : SettingsPageBase
         ImapSslCheck.IsCheckedChanged += (_, _) =>
         {
             if (_vm.Current != null) _vm.Current.ImapUseSsl = ImapSslCheck.IsChecked ?? true;
+            if (!_refreshing) _vm.AutoSave();
         };
         SmtpSslCheck.IsCheckedChanged += (_, _) =>
         {
             if (_vm.Current != null) _vm.Current.SmtpUseSsl = SmtpSslCheck.IsChecked ?? true;
+            if (!_refreshing) _vm.AutoSave();
         };
 
         NotifyToggle.IsCheckedChanged += (_, _) =>
         {
             if (_vm.Current != null) _vm.Current.NotifyEnabled = NotifyToggle.IsChecked ?? true;
+            if (!_refreshing) _vm.AutoSave();
         };
 
         QuoteToggle.IsCheckedChanged += (_, _) =>
         {
             if (_vm.Current != null) _vm.Current.QuoteOriginal = QuoteToggle.IsChecked ?? true;
+            if (!_refreshing) _vm.AutoSave();
         };
 
         SignatureBox.TextChanged += (_, _) =>
         {
             if (_vm.Current != null) _vm.Current.Signature = SignatureBox.Text ?? "";
         };
+
+        // 文本字段失焦即保存，避免用户以为改动已生效但实际未落盘
+        foreach (var box in new[]
+                 {
+                     DisplayNameBox, EmailBox, ImapServerBox, ImapPortBox,
+                     SmtpServerBox, SmtpPortBox, SignatureBox,
+                 })
+        {
+            box.LostFocus += (_, _) =>
+            {
+                if (!_refreshing) _vm.AutoSave();
+            };
+        }
     }
 
     private void RefreshList(bool clearPassword = false)
     {
-        EditorArea.IsVisible = _vm.Current != null;
-        if (_vm.Current is not { } acc) return;
-
-        DisplayNameBox.Text = acc.DisplayName;
-        EmailBox.Text = acc.Email;
-        ImapServerBox.Text = acc.ImapServer;
-        ImapPortBox.Text = acc.ImapPort.ToString();
-        SmtpServerBox.Text = acc.SmtpServer;
-        SmtpPortBox.Text = acc.SmtpPort.ToString();
-        ImapSslCheck.IsChecked = acc.ImapUseSsl;
-        SmtpSslCheck.IsChecked = acc.SmtpUseSsl;
-        NotifyToggle.IsChecked = acc.NotifyEnabled;
-        QuoteToggle.IsChecked = acc.QuoteOriginal;
-        SignatureBox.Text = acc.Signature;
-
-        // 切换/新增/删除账号后必须清空授权码，避免把上一个账号的授权码写入当前账号
-        if (clearPassword)
+        _refreshing = true;
+        try
         {
-            PasswordBox.Text = "";
-            _vm.PasswordPlain = "";
-        }
+            EditorArea.IsVisible = _vm.Current != null;
+            if (_vm.Current is not { } acc) return;
 
-        StatusText.Text = _vm.Status;
-        StatusText.IsVisible = !string.IsNullOrEmpty(_vm.Status);
+            DisplayNameBox.Text = acc.DisplayName;
+            EmailBox.Text = acc.Email;
+            ImapServerBox.Text = acc.ImapServer;
+            ImapPortBox.Text = acc.ImapPort.ToString();
+            SmtpServerBox.Text = acc.SmtpServer;
+            SmtpPortBox.Text = acc.SmtpPort.ToString();
+            ImapSslCheck.IsChecked = acc.ImapUseSsl;
+            SmtpSslCheck.IsChecked = acc.SmtpUseSsl;
+            NotifyToggle.IsChecked = acc.NotifyEnabled;
+            QuoteToggle.IsChecked = acc.QuoteOriginal;
+            SignatureBox.Text = acc.Signature;
+
+            // 切换/新增/删除账号后必须清空授权码，避免把上一个账号的授权码写入当前账号
+            if (clearPassword)
+            {
+                PasswordBox.Text = "";
+                _vm.PasswordPlain = "";
+            }
+
+            StatusText.Text = _vm.Status;
+            StatusText.IsVisible = !string.IsNullOrEmpty(_vm.Status);
+        }
+        finally
+        {
+            _refreshing = false;
+        }
     }
 
     private void OnAccountSelectionChanged(object? sender, SelectionChangedEventArgs e)
@@ -135,6 +162,7 @@ public partial class AccountTabPage : SettingsPageBase
             acc.IsSelected = true;
             _vm.Current = acc;
             RefreshList(clearPassword: true);
+            _vm.AutoSave();
         }
     }
 

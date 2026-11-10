@@ -23,7 +23,7 @@ public sealed class MailIslandConfigHandler
     {
         _logger = logger;
         _configPath = Path.Combine(GlobalConstants.PluginConfigFolder, "MailIslandConfig.json");
-        var salt = SaltProvider.GetOrCreate(GlobalConstants.PluginConfigFolder);
+        var salt = SaltProvider.GetOrCreate(GlobalConstants.PluginConfigFolder, logger);
         _protector = CreateProtector(salt);
         Data = Load();
 
@@ -36,17 +36,35 @@ public sealed class MailIslandConfigHandler
     /// <summary>获取当前凭据保护器（供 UI 设置授权码，以及加密本地邮件缓存）。</summary>
     public ICredentialProtector Protector => _protector;
 
-    /// <summary>保存配置：隐私字段加密后写入磁盘；写入失败不抛出，避免中断 UI 操作。</summary>
-    public void Save()
+    /// <summary>保存配置：隐私字段加密后写入磁盘；返回是否成功。</summary>
+    public bool Save()
     {
         try
         {
             ConfigureFileHelper.SaveConfig(_configPath, BuildEncryptedSnapshot());
+            return true;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "保存邮箱插件配置失败");
+            return false;
         }
+    }
+
+    /// <summary>记住用户最后选择的账号，供邮件页与发件箱页恢复。</summary>
+    public void SetSelectedAccount(string accountId)
+    {
+        var changed = false;
+        foreach (var account in Data.Accounts)
+        {
+            var selected = account.Id == accountId;
+            if (account.IsSelected == selected) continue;
+
+            account.IsSelected = selected;
+            changed = true;
+        }
+
+        if (changed) Save();
     }
 
     private static ICredentialProtector CreateProtector(byte[]? salt) =>
@@ -69,6 +87,11 @@ public sealed class MailIslandConfigHandler
         foreach (var rule in data.KeywordRules)
         {
             rule.Keyword = Unprotect(rule.Keyword, ref _needsSave);
+        }
+
+        if (_needsSave)
+        {
+            _logger.LogInformation("检测到旧版明文或无盐字段，将按新盐重新加密保存");
         }
 
         return data;
@@ -139,8 +162,9 @@ public sealed class MailIslandConfigHandler
         {
             return _protector.Decrypt(value);
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogWarning(ex, "隐私字段解密失败，已留空等待重新填写");
             return "";
         }
     }
@@ -169,10 +193,12 @@ public sealed class MailIslandConfigHandler
         {
             var plain = new WindowsCredentialProtector().Decrypt(cipherText);
             _needsSave = true;
+            _logger.LogInformation("已把旧版无盐授权码迁移为带盐加密");
             return _protector.Encrypt(plain);
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogWarning(ex, "授权码解密失败，已清空等待重新填写");
             return "";
         }
     }

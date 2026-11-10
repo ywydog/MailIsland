@@ -158,12 +158,6 @@ public partial class ComposeViewModel : ObservableObject
         }
     }
 
-    partial void OnSaveSentCopyChanged(bool value)
-    {
-        _config.Data.SaveSentCopy = value;
-        _config.Save();
-    }
-
     private void UpdateAttachmentSummary()
     {
         if (Attachments.Count == 0)

@@ -14,7 +14,7 @@
         <!-- 顶部：账号、搜索、图片开关、刷新（仅在列表视图显示） -->
         <Grid x:Name="HeaderBar"
               Grid.Row="0"
-              ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto"
+              ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto"
               Margin="0,0,0,8">
             <TextBlock Grid.Column="0"
                        Text="收件账号"
@@ -66,6 +66,14 @@
             </StackPanel>
 
             <Button Grid.Column="5"
+                    x:Name="ComposeButton"
+                    Content="写邮件"
+                    Margin="0,0,8,0"
+                    VerticalAlignment="Center"
+                    Click="OnComposeClick"
+                    ToolTip.Tip="写一封新邮件" />
+
+            <Button Grid.Column="6"
                     x:Name="RefreshButton"
                     Content="刷新邮件"
                     VerticalAlignment="Center"

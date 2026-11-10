@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using MailIsland.ConfigHandlers;
@@ -23,6 +24,8 @@ public partial class SentTabViewModel : ObservableObject
     [ObservableProperty] private string _status = "";
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private Control? _bodyContent;
+    [ObservableProperty] private string? _lastSavedFilePath;
+    [ObservableProperty] private bool _hasSavedAttachment;
 
     public SentTabViewModel(MailIslandConfigHandler config, IMailClientService mail)
     {
@@ -51,6 +54,8 @@ public partial class SentTabViewModel : ObservableObject
         Attachments.Clear();
         Messages.Clear();
         _inlineImageCache.Clear();
+        HasSavedAttachment = false;
+        LastSavedFilePath = null;
 
         _loadCts?.Cancel();
 
@@ -60,6 +65,7 @@ public partial class SentTabViewModel : ObservableObject
             return;
         }
 
+        _config.SetSelectedAccount(value.Id);
         _ = LoadAsync();
     }
 
@@ -110,6 +116,8 @@ public partial class SentTabViewModel : ObservableObject
         BodyContent = null;
         Attachments.Clear();
         _inlineImageCache.Clear();
+        HasSavedAttachment = false;
+        LastSavedFilePath = null;
         if (value == null) return;
 
         foreach (var attachment in value.Attachments)
@@ -147,6 +155,8 @@ public partial class SentTabViewModel : ObservableObject
             var path = AttachmentStorage.BuildTargetPath(directory, attachment.FileName);
             await File.WriteAllBytesAsync(path, bytes, ct);
 
+            LastSavedFilePath = path;
+            HasSavedAttachment = true;
             Status = $"已保存到桌面：{Path.GetFileName(path)}";
         }
         catch (OperationCanceledException)
@@ -155,6 +165,24 @@ public partial class SentTabViewModel : ObservableObject
         catch (Exception ex)
         {
             Status = $"下载失败：{ex.Message}";
+        }
+    }
+
+    /// <summary>在资源管理器中定位最近保存的附件。</summary>
+    public void OpenContainingFolder()
+    {
+        if (string.IsNullOrWhiteSpace(LastSavedFilePath)) return;
+
+        try
+        {
+            Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{LastSavedFilePath}\"")
+            {
+                UseShellExecute = true,
+            });
+        }
+        catch (Exception ex)
+        {
+            Status = $"无法打开文件夹：{ex.Message}";
         }
     }
 

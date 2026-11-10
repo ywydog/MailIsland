@@ -145,6 +145,12 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
+
+                        <Button Content="打开所在文件夹"
+                                IsVisible="{Binding HasSavedAttachment}"
+                                HorizontalAlignment="Left"
+                                Click="OnOpenFolderClick"
+                                ToolTip.Tip="在资源管理器中定位最近保存的附件" />
                     </StackPanel>
                 </ScrollViewer>
             </Border>

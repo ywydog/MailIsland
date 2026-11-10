@@ -35,7 +35,7 @@ public partial class SentTabPage : SettingsPageBase
 
         ComposeView.Closed += OnComposeClosed;
 
-        if (_vm.Accounts.FirstOrDefault() is { } first)
+        if ((_vm.Accounts.FirstOrDefault(a => a.IsSelected) ?? _vm.Accounts.FirstOrDefault()) is { } first)
         {
             AccountCombo.SelectedItem = first;
             _vm.SelectedAccount = first;
@@ -110,6 +110,8 @@ public partial class SentTabPage : SettingsPageBase
             await _vm.DownloadAttachmentAsync(attachment);
         }
     }
+
+    private void OnOpenFolderClick(object? sender, RoutedEventArgs e) => _vm.OpenContainingFolder();
 
     private void ShowList()
     {

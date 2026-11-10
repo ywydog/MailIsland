@@ -41,7 +41,7 @@ public partial class MailTabPage : SettingsPageBase
             ShowList();
         };
 
-        if (_vm.Accounts.FirstOrDefault() is { } first)
+        if ((_vm.Accounts.FirstOrDefault(a => a.IsSelected) ?? _vm.Accounts.FirstOrDefault()) is { } first)
         {
             AccountCombo.SelectedItem = first;
             _vm.SelectedAccount = first;
@@ -124,6 +124,9 @@ public partial class MailTabPage : SettingsPageBase
         // 清空选择，保证再次点击同一封邮件仍能打开详情
         MessageList.SelectedItem = null;
         ShowList();
+
+        // “仅看未读”下，已读邮件在返回列表后立即移除
+        _vm.RefreshFilter();
     }
 
     private async void OnDownloadAttachmentClick(object? sender, RoutedEventArgs e)
@@ -138,7 +141,9 @@ public partial class MailTabPage : SettingsPageBase
 
     private void OnLoadImagesOnceClick(object? sender, RoutedEventArgs e) => _vm.LoadImagesOnce();
 
-    // ---------- 回复 / 转发（复用发件箱页的写邮件控件） ----------
+    // ---------- 写邮件 / 回复 / 转发（复用发件箱页的写邮件控件） ----------
+
+    private void OnComposeClick(object? sender, RoutedEventArgs e) => OpenCompose(null, null, null);
 
     private void OnReplyClick(object? sender, RoutedEventArgs e)
     {

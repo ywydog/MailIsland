@@ -86,10 +86,25 @@ public sealed class MailPollingService : BackgroundService
                 !string.IsNullOrWhiteSpace(a.Email) && !string.IsNullOrWhiteSpace(a.ImapServer)).ToList();
 
             RaiseSyncStatus(accounts.Count == 0 ? "无启用账号" : $"正在同步 {accounts.Count} 个账号…");
+            _logger.LogDebug("开始同步：{Count} 个账号", accounts.Count);
 
+            var started = DateTimeOffset.Now;
+            var totalNew = 0;
             foreach (var account in accounts)
             {
-                await SyncAccountAsync(account, ct);
+                totalNew += await SyncAccountAsync(account, ct);
+            }
+
+            var elapsed = (DateTimeOffset.Now - started).TotalMilliseconds;
+            if (totalNew > 0)
+            {
+                _logger.LogInformation("同步完成：{Accounts} 个账号，新增 {NewMails} 封，用时 {Elapsed} ms",
+                    accounts.Count, totalNew, (long)elapsed);
+            }
+            else
+            {
+                _logger.LogDebug("同步完成：{Accounts} 个账号，无新邮件，用时 {Elapsed} ms",
+                    accounts.Count, (long)elapsed);
             }
 
             // 清理已删除账号的水位，避免字典无限增长
@@ -109,14 +124,14 @@ public sealed class MailPollingService : BackgroundService
         }
     }
 
-    private async Task SyncAccountAsync(MailAccountSettings account, CancellationToken ct)
+    private async Task<int> SyncAccountAsync(MailAccountSettings account, CancellationToken ct)
     {
         try
         {
             if (string.IsNullOrWhiteSpace(account.EncryptedPassword))
             {
                 _logger.LogDebug("账号 {Account} 未设置授权码，跳过", MaskEmail(account.Email));
-                return;
+                return 0;
             }
 
             string plainPassword;
@@ -128,7 +143,7 @@ public sealed class MailPollingService : BackgroundService
             {
                 _logger.LogWarning(ex, "账号 {Account} 授权码解密失败，跳过", MaskEmail(account.Email));
                 RaiseSyncStatus($"账号 {account.DisplayName} 授权码解密失败，请重新填写");
-                return;
+                return 0;
             }
 
             // 轮询只取摘要，再为真正的新邮件补正文，避免每轮下载全部正文
@@ -150,6 +165,9 @@ public sealed class MailPollingService : BackgroundService
 
             if (newMails.Count > 0)
             {
+                _logger.LogInformation("账号 {Account} 新增 {Count} 封邮件",
+                    MaskEmail(account.Email), newMails.Count);
+
                 // 仅拉取新邮件正文；失败则不推进水位，下一轮重试
                 await _mail.FillBodiesAsync(account, plainPassword, newMails, ct);
 
@@ -176,6 +194,7 @@ public sealed class MailPollingService : BackgroundService
             }
 
             _lastUidByAccount[prefix] = watermark;
+            return newMails.Count;
         }
         catch (OperationCanceledException)
         {
@@ -185,17 +204,23 @@ public sealed class MailPollingService : BackgroundService
         {
             _logger.LogWarning(ex, "账号 {Account} 同步失败", MaskEmail(account.Email));
             RaiseSyncStatus($"账号 {account.DisplayName} 同步失败");
+            return 0;
         }
     }
 
     /// <summary>按提醒规则推送新邮件；受全局开关、账号开关与免打扰时段约束。</summary>
     private void NotifyNewMails(MailAccountSettings account, IReadOnlyList<MailMessage> mails)
     {
-        if (!_config.Data.NotifyEnabled || !account.NotifyEnabled) return;
+        if (!_config.Data.NotifyEnabled || !account.NotifyEnabled)
+        {
+            _logger.LogDebug("跳过新邮件提醒：全局或账号提醒已关闭");
+            return;
+        }
 
         if (_config.Data.QuietHoursEnabled &&
             QuietHours.IsQuietTime(DateTime.Now, _config.Data.QuietHoursStart, _config.Data.QuietHoursEnd))
         {
+            _logger.LogDebug("跳过新邮件提醒：当前处于免打扰时段");
             return;
         }
 
@@ -206,15 +231,21 @@ public sealed class MailPollingService : BackgroundService
             if (hit) matched.Add((mail, keyword));
         }
 
-        if (matched.Count == 0) return;
+        if (matched.Count == 0)
+        {
+            _logger.LogDebug("跳过新邮件提醒：未命中任何关键词规则");
+            return;
+        }
 
         // 多封新邮件可合并为一条，避免连续弹出刷屏
         if (_config.Data.NotifySummaryMode && matched.Count > 1)
         {
+            _logger.LogInformation("推送合并提醒：{Count} 封新邮件", matched.Count);
             _notifier.NotifySummary(account, matched.Select(item => item.Mail).ToList(), _config.Data);
             return;
         }
 
+        _logger.LogInformation("推送新邮件提醒：{Count} 封", matched.Count);
         foreach (var (mail, keyword) in matched)
         {
             _notifier.Notify(mail, account, _config.Data, !string.IsNullOrEmpty(keyword), keyword);

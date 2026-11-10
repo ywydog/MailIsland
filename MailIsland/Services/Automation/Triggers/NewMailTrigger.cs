@@ -3,6 +3,7 @@ using ClassIsland.Core.Attributes;
 using MailIsland.Models;
 using MailIsland.Models.Automation;
 using MailIsland.Shared;
+using Microsoft.Extensions.Logging;
 
 namespace MailIsland.Services.Automation.Triggers;
 
@@ -11,7 +12,9 @@ namespace MailIsland.Services.Automation.Triggers;
 /// <para>订阅“新邮件到达”事件，按用户配置（标题/正文 + 关键词）判断，命中则触发。</para>
 /// </summary>
 [TriggerInfo(GlobalConstants.NewMailTriggerId, "新邮件包含关键词", "\ue8b7")]
-public class NewMailTrigger(MailPollingService pollingService) : TriggerBase<NewMailTriggerSettings>
+public class NewMailTrigger(
+    MailPollingService pollingService,
+    ILogger<NewMailTrigger> logger) : TriggerBase<NewMailTriggerSettings>
 {
     private MailPollingService PollingService { get; } = pollingService;
     private bool _subscribed;
@@ -41,12 +44,14 @@ public class NewMailTrigger(MailPollingService pollingService) : TriggerBase<New
         {
             if (Matches(mail))
             {
+                logger.LogDebug("新邮件命中自动化关键词，触发行动");
                 Trigger();
             }
         }
-        catch
+        catch (Exception ex)
         {
             // 自动化执行异常不应影响邮件轮询与其他触发器
+            logger.LogWarning(ex, "新邮件自动化触发器执行失败");
         }
     }
 

@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using Microsoft.Extensions.Logging;
 
 namespace MailIsland.Storage;
 
@@ -15,7 +16,7 @@ public static class SaltProvider
     private static byte[]? _cached;
 
     /// <summary>获取或创建盐值；目录不可用时返回 null（此时不启用盐）。</summary>
-    public static byte[]? GetOrCreate(string folder)
+    public static byte[]? GetOrCreate(string folder, ILogger? logger = null)
     {
         if (string.IsNullOrWhiteSpace(folder)) return null;
 
@@ -39,10 +40,12 @@ public static class SaltProvider
                             _cached = saved;
                             return _cached;
                         }
+
+                        logger?.LogWarning("盐文件长度异常，将重新生成：{Path}", path);
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        // 盐文件损坏：删除后重新生成，避免永久退化为无盐模式
+                        logger?.LogWarning(ex, "盐文件损坏，将重新生成：{Path}", path);
                     }
 
                     TryDelete(path);
@@ -55,12 +58,14 @@ public static class SaltProvider
                 File.WriteAllText(tempPath, Convert.ToBase64String(salt));
                 File.Move(tempPath, path, overwrite: true);
 
+                logger?.LogInformation("已生成插件盐值：{Path}", path);
                 _cached = salt;
                 return _cached;
             }
-            catch
+            catch (Exception ex)
             {
                 // 盐不可用时不阻断插件运行，退化为无盐加密
+                logger?.LogWarning(ex, "无法读取或写入盐文件，加密将退化为无盐模式");
                 return null;
             }
         }

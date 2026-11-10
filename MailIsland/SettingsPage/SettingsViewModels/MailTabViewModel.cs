@@ -81,6 +81,7 @@ public partial class MailTabViewModel : ObservableObject
             return;
         }
 
+        _config.SetSelectedAccount(value.Id);
         _ = LoadAsync();
     }
 
@@ -272,6 +273,9 @@ public partial class MailTabViewModel : ObservableObject
         _allMails.AddRange(mails);
         ApplyFilter();
     }
+
+    /// <summary>重新应用当前筛选（例如返回列表时同步已读状态）。</summary>
+    public void RefreshFilter() => ApplyFilter();
 
     private void ApplyFilter()
     {

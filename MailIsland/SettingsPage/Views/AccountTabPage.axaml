@@ -110,8 +110,10 @@
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" Spacing="10">
-                        <Button x:Name="TestButton" Content="连接验证" Classes="accent" />
-                        <Button x:Name="SaveButton" Content="保存授权码" />
+                        <Button x:Name="TestButton" Content="连接验证" Classes="accent"
+                                ToolTip.Tip="同时验证收件（IMAP）与发件（SMTP）" />
+                        <Button x:Name="SaveButton" Content="保存"
+                                ToolTip.Tip="保存账号信息与授权码（字段失焦时也会自动保存）" />
                     </StackPanel>
                 </StackPanel>
             </Border>

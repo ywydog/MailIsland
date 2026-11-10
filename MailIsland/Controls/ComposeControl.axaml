@@ -105,7 +105,7 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <CheckBox Content="保存到“已发送”"
+                    <CheckBox Content="本次保存到“已发送”"
                               IsChecked="{Binding SaveSentCopy, Mode=TwoWay}" />
 
                     <StackPanel Orientation="Horizontal" Spacing="8">
