@@ -60,7 +60,7 @@ public partial class MailTabPage : SettingsPageBase
     {
         if (MessageList.SelectedItem is not MailMessage msg)
         {
-            ShowEmptyDetail();
+            ShowList();
             return;
         }
 
@@ -84,9 +84,20 @@ public partial class MailTabPage : SettingsPageBase
 
         DetailContent.IsVisible = true;
         DetailHint.IsVisible = false;
+
+        ShowDetailPage();
     }
 
-    private void ShowEmptyDetail()
+    /// <summary>切换到整页详情。</summary>
+    private void ShowDetailPage()
+    {
+        ListView.IsVisible = false;
+        HeaderBar.IsVisible = false;
+        DetailView.IsVisible = true;
+    }
+
+    /// <summary>返回整页列表，并清空详情内容。</summary>
+    private void ShowList()
     {
         _vm.SelectedMessage = null;
 
@@ -95,9 +106,19 @@ public partial class MailTabPage : SettingsPageBase
         DetailDate.Text = "";
         BodyHost.Content = null;
         AttachmentHeader.IsVisible = false;
-
         DetailContent.IsVisible = false;
         DetailHint.IsVisible = true;
+
+        DetailView.IsVisible = false;
+        ListView.IsVisible = true;
+        HeaderBar.IsVisible = true;
+    }
+
+    private void OnBackClick(object? sender, RoutedEventArgs e)
+    {
+        // 清空选择，保证再次点击同一封邮件仍能打开详情
+        MessageList.SelectedItem = null;
+        ShowList();
     }
 
     private async void OnDownloadAttachmentClick(object? sender, RoutedEventArgs e)

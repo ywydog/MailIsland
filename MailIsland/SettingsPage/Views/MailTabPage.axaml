@@ -10,7 +10,11 @@
     </ci:SettingsPageBase.Resources>
 
     <Grid RowDefinitions="Auto,*">
-        <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto" Margin="0,0,0,8">
+        <!-- 顶部：账号、搜索、图片开关、刷新（仅在列表视图显示） -->
+        <Grid x:Name="HeaderBar"
+              Grid.Row="0"
+              ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto"
+              Margin="0,0,0,8">
             <TextBlock Grid.Column="0"
                        Text="收件账号"
                        VerticalAlignment="Center"
@@ -61,74 +65,84 @@
                     ToolTip.Tip="重新从服务器收取最近邮件" />
         </Grid>
 
-        <Grid Grid.Row="1" ColumnDefinitions="3*,*">
-            <!-- 邮件列表 -->
-            <Border Grid.Column="0"
-                    CornerRadius="8"
-                    Padding="8"
-                    Background="{DynamicResource LayerFillColorDefaultBrush}">
-                <DockPanel>
-                    <TextBlock x:Name="StatusText"
-                               DockPanel.Dock="Top"
-                               Text="{Binding Status}"
-                               TextWrapping="Wrap"
-                               Margin="0,0,0,6"
-                               FontSize="12"
-                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                    <ListBox x:Name="MessageList" ItemsSource="{Binding Messages}">
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <Grid ColumnDefinitions="*,Auto" Margin="0,4">
-                                    <StackPanel Grid.Column="0" Spacing="2">
-                                        <Grid ColumnDefinitions="Auto,*">
-                                            <Ellipse Grid.Column="0"
-                                                     Width="8"
-                                                     Height="8"
-                                                     Margin="0,0,6,0"
-                                                     VerticalAlignment="Center"
-                                                     Fill="#D13438"
-                                                     IsVisible="{Binding IsUnread}" />
-                                            <TextBlock Grid.Column="1"
-                                                       Text="{Binding SubjectDisplay}"
-                                                       TextTrimming="CharacterEllipsis"
-                                                       FontWeight="{Binding IsUnread, Converter={StaticResource UnreadBoldConverter}}" />
-                                        </Grid>
-                                        <TextBlock Text="{Binding SenderDisplay}"
+        <!-- 邮件列表（整页） -->
+        <Border x:Name="ListView"
+                Grid.Row="1"
+                CornerRadius="8"
+                Padding="8"
+                Background="{DynamicResource LayerFillColorDefaultBrush}">
+            <DockPanel>
+                <TextBlock x:Name="StatusText"
+                           DockPanel.Dock="Top"
+                           Text="{Binding Status}"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,6"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                <ListBox x:Name="MessageList" ItemsSource="{Binding Messages}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Grid ColumnDefinitions="*,Auto" Margin="0,4">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <Grid ColumnDefinitions="Auto,*">
+                                        <Ellipse Grid.Column="0"
+                                                 Width="8"
+                                                 Height="8"
+                                                 Margin="0,0,6,0"
+                                                 VerticalAlignment="Center"
+                                                 Fill="#D13438"
+                                                 IsVisible="{Binding IsUnread}" />
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding SubjectDisplay}"
                                                    TextTrimming="CharacterEllipsis"
-                                                   FontSize="12"
-                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="1"
-                                                Spacing="2"
-                                                Margin="8,0,0,0"
-                                                HorizontalAlignment="Right">
-                                        <TextBlock Text="{Binding DateDisplay}"
-                                                   FontSize="11"
-                                                   HorizontalAlignment="Right"
-                                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
-                                        <TextBlock Text="含附件"
-                                                   IsVisible="{Binding HasAttachment}"
-                                                   FontSize="11"
-                                                   HorizontalAlignment="Right"
-                                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
-                                    </StackPanel>
-                                </Grid>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
-                </DockPanel>
-            </Border>
+                                                   FontWeight="{Binding IsUnread, Converter={StaticResource UnreadBoldConverter}}" />
+                                    </Grid>
+                                    <TextBlock Text="{Binding SenderDisplay}"
+                                               TextTrimming="CharacterEllipsis"
+                                               FontSize="12"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1"
+                                            Spacing="2"
+                                            Margin="8,0,0,0"
+                                            HorizontalAlignment="Right">
+                                    <TextBlock Text="{Binding DateDisplay}"
+                                               FontSize="11"
+                                               HorizontalAlignment="Right"
+                                               Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                                    <TextBlock Text="含附件"
+                                               IsVisible="{Binding HasAttachment}"
+                                               FontSize="11"
+                                               HorizontalAlignment="Right"
+                                               Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+        </Border>
 
-            <!-- 邮件详情 -->
-            <Border Grid.Column="1"
-                    Margin="8,0,0,0"
+        <!-- 邮件详情（整页，左上角返回） -->
+        <Grid x:Name="DetailView"
+              Grid.Row="1"
+              RowDefinitions="Auto,*"
+              IsVisible="False">
+            <Button x:Name="BackButton"
+                    Grid.Row="0"
+                    Content="返回"
+                    HorizontalAlignment="Left"
+                    Margin="0,0,0,8"
+                    Click="OnBackClick"
+                    ToolTip.Tip="返回邮件列表" />
+            <Border Grid.Row="1"
                     CornerRadius="8"
                     Padding="16"
                     Background="{DynamicResource LayerFillColorDefaultBrush}">
                 <ScrollViewer>
                     <StackPanel Spacing="8">
                         <TextBlock x:Name="DetailHint"
-                                   Text="从左侧选择一封邮件，这里会显示正文和附件。"
+                                   Text="点击一封邮件查看正文和附件。"
                                    TextWrapping="Wrap"
                                    FontSize="13"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
