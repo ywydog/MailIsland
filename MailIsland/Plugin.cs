@@ -47,7 +47,8 @@ public partial class Plugin : PluginBase
 
         // 注册自动化行动
         services.AddAction<Services.Automation.Actions.SendMailAction, Controls.Automation.SendMailActionSettingsControl>();
-        services.AddAction<Services.Automation.Actions.AdjustMailNotificationAction, Controls.Automation.AdjustMailNotificationSettingsControl>();
+        services.AddAction<Services.Automation.Actions.SetMailNotificationEnabledAction, Controls.Automation.NotificationToggleSettingsControl>();
+        services.AddAction<Services.Automation.Actions.SetQuietHoursAction, Controls.Automation.NotificationToggleSettingsControl>();
 
         // 注册设置页分组（折叠下方设置页为一个“邮箱设置”分组）
         services.AddSettingsPageGroup(Shared.GlobalConstants.SettingsGroupId, "\uE8B7", "邮箱设置");

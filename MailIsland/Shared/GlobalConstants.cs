@@ -15,8 +15,11 @@ public static class GlobalConstants
     /// <summary>“发送邮件”自动化行动 ID。</summary>
     public const string SendMailActionId = "mailisland.action.sendmail";
 
-    /// <summary>“调整邮件提醒”自动化行动 ID。</summary>
-    public const string AdjustMailNotificationActionId = "mailisland.action.adjustnotify";
+    /// <summary>“开关邮件提醒”自动化行动 ID。</summary>
+    public const string SetMailNotificationActionId = "mailisland.action.setnotify";
+
+    /// <summary>“开关免打扰”自动化行动 ID。</summary>
+    public const string SetQuietHoursActionId = "mailisland.action.setquiethours";
 
     /// <summary>设置页分组 ID（把多个设置页折叠为“邮箱设置”分组）。</summary>
     public const string SettingsGroupId = "mailisland.settings";
