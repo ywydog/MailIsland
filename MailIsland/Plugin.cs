@@ -22,6 +22,7 @@ public partial class Plugin : PluginBase
         // 基础服务
         services.AddSingleton<MailIslandConfigHandler>();
         services.AddSingleton<IMailClientService, MailClientService>();
+        services.AddSingleton<ISmtpClientService, SmtpClientService>();
         services.AddSingleton<Storage.MailCacheStore>();
         services.AddSingleton<MailNotificationProvider>();
         services.AddSingleton<MailPollingService>();

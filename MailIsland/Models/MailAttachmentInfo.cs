@@ -13,14 +13,5 @@ public sealed class MailAttachmentInfo
 
     /// <summary>人类可读的大小文本，仅用于界面显示。</summary>
     [JsonIgnore]
-    public string SizeDisplay
-    {
-        get
-        {
-            if (Size <= 0) return "";
-            if (Size < 1024) return $"{Size} B";
-            if (Size < 1024 * 1024) return $"{Size / 1024.0:0.#} KB";
-            return $"{Size / (1024.0 * 1024):0.#} MB";
-        }
-    }
+    public string SizeDisplay => Size <= 0 ? "" : ByteSize.Format(Size);
 }

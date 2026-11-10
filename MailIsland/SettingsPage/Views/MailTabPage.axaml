@@ -13,7 +13,7 @@
         <!-- 顶部：账号、搜索、图片开关、刷新（仅在列表视图显示） -->
         <Grid x:Name="HeaderBar"
               Grid.Row="0"
-              ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto"
+              ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto"
               Margin="0,0,0,8">
             <TextBlock Grid.Column="0"
                        Text="收件账号"
@@ -58,6 +58,14 @@
             </StackPanel>
 
             <Button Grid.Column="5"
+                    x:Name="ComposeButton"
+                    Content="写邮件"
+                    Margin="0,0,8,0"
+                    VerticalAlignment="Center"
+                    Click="OnComposeClick"
+                    ToolTip.Tip="写一封新邮件" />
+
+            <Button Grid.Column="6"
                     x:Name="RefreshButton"
                     Content="刷新邮件"
                     VerticalAlignment="Center"
@@ -128,13 +136,24 @@
               Grid.Row="1"
               RowDefinitions="Auto,*"
               IsVisible="False">
-            <Button x:Name="BackButton"
-                    Grid.Row="0"
-                    Content="返回"
-                    HorizontalAlignment="Left"
-                    Margin="0,0,0,8"
-                    Click="OnBackClick"
-                    ToolTip.Tip="返回邮件列表" />
+            <StackPanel Grid.Row="0"
+                        Orientation="Horizontal"
+                        Spacing="8"
+                        HorizontalAlignment="Left"
+                        Margin="0,0,0,8">
+                <Button x:Name="BackButton"
+                        Content="返回"
+                        Click="OnBackClick"
+                        ToolTip.Tip="返回邮件列表" />
+                <Button x:Name="ReplyButton"
+                        Content="回复"
+                        Click="OnReplyClick"
+                        ToolTip.Tip="回复这封邮件" />
+                <Button x:Name="ForwardButton"
+                        Content="转发"
+                        Click="OnForwardClick"
+                        ToolTip.Tip="转发这封邮件" />
+            </StackPanel>
             <Border Grid.Row="1"
                     CornerRadius="8"
                     Padding="16"
@@ -202,6 +221,163 @@
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
+            </Border>
+        </Grid>
+
+        <!-- 写邮件（整页） -->
+        <Grid x:Name="ComposeView"
+              Grid.Row="1"
+              RowDefinitions="Auto,*"
+              IsVisible="False">
+            <StackPanel Grid.Row="0"
+                        Orientation="Horizontal"
+                        Spacing="8"
+                        Margin="0,0,0,8">
+                <Button x:Name="ComposeBackButton"
+                        Content="返回"
+                        Click="OnComposeBackClick"
+                        ToolTip.Tip="返回邮件列表" />
+                <TextBlock Text="写邮件"
+                           FontSize="16"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center" />
+            </StackPanel>
+
+            <Border Grid.Row="1"
+                    CornerRadius="8"
+                    Padding="16"
+                    Background="{DynamicResource LayerFillColorDefaultBrush}">
+                <ScrollViewer>
+                    <StackPanel Spacing="10">
+                        <Grid ColumnDefinitions="Auto,*">
+                            <TextBlock Text="收件人"
+                                       Width="56"
+                                       VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            <TextBox Grid.Column="1"
+                                     Text="{Binding To, Mode=TwoWay}"
+                                     Watermark="多个地址用逗号或分号分隔" />
+                        </Grid>
+                        <Grid ColumnDefinitions="Auto,*">
+                            <TextBlock Text="抄送"
+                                       Width="56"
+                                       VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            <TextBox Grid.Column="1"
+                                     Text="{Binding Cc, Mode=TwoWay}"
+                                     Watermark="可留空" />
+                        </Grid>
+                        <Grid ColumnDefinitions="Auto,*">
+                            <TextBlock Text="密送"
+                                       Width="56"
+                                       VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            <TextBox Grid.Column="1"
+                                     Text="{Binding Bcc, Mode=TwoWay}"
+                                     Watermark="可留空" />
+                        </Grid>
+                        <Grid ColumnDefinitions="Auto,*">
+                            <TextBlock Text="主题"
+                                       Width="56"
+                                       VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            <TextBox Grid.Column="1"
+                                     Text="{Binding Subject, Mode=TwoWay}"
+                                     Watermark="邮件主题" />
+                        </Grid>
+
+                        <TextBox Text="{Binding Body, Mode=TwoWay}"
+                                 AcceptsReturn="True"
+                                 TextWrapping="Wrap"
+                                 Height="220"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                 Watermark="正文" />
+
+                        <Grid ColumnDefinitions="Auto,*">
+                            <Button Content="添加附件"
+                                    Click="OnAddAttachmentClick"
+                                    ToolTip.Tip="从本地选择文件" />
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding AttachmentSummary}"
+                                       Margin="8,0,0,0"
+                                       VerticalAlignment="Center"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        </Grid>
+
+                        <ItemsControl ItemsSource="{Binding Attachments}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Margin="0,2"
+                                            Padding="10,6"
+                                            CornerRadius="6"
+                                            Background="{DynamicResource LayerFillColorDefaultBrush}">
+                                        <Grid ColumnDefinitions="*,Auto,Auto">
+                                            <TextBlock Grid.Column="0"
+                                                       Text="{Binding FileName}"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding SizeDisplay}"
+                                                       Margin="8,0"
+                                                       FontSize="12"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                            <Button Grid.Column="2"
+                                                    Content="移除"
+                                                    Click="OnRemoveComposeAttachmentClick" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <CheckBox Content="保存到“已发送”"
+                                  IsChecked="{Binding SaveSentCopy, Mode=TwoWay}" />
+
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="发送"
+                                    Classes="accent"
+                                    Click="OnSendClick"
+                                    IsEnabled="{Binding !IsSending}" />
+                            <Button Content="取消"
+                                    Click="OnComposeBackClick" />
+                        </StackPanel>
+
+                        <TextBlock Text="{Binding Status}"
+                                   TextWrapping="Wrap"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <!-- 放弃确认浮层 -->
+            <Border x:Name="DiscardOverlay"
+                    Grid.RowSpan="2"
+                    IsVisible="False"
+                    Background="#66000000">
+                <Border Padding="20"
+                        CornerRadius="8"
+                        MaxWidth="360"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="放弃这封邮件？"
+                                   FontSize="16"
+                                   FontWeight="SemiBold" />
+                        <TextBlock Text="已填写的内容不会保存。"
+                                   TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <StackPanel Orientation="Horizontal"
+                                    Spacing="8"
+                                    HorizontalAlignment="Right">
+                            <Button Content="继续编辑" Click="OnDiscardCancelClick" />
+                            <Button Content="放弃" Classes="accent" Click="OnDiscardConfirmClick" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
             </Border>
         </Grid>
     </Grid>

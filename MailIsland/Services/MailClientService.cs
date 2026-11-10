@@ -158,6 +158,57 @@ public sealed class MailClientService : IMailClientService
         await client.DisconnectAsync(true, ct);
     }
 
+    /// <summary>把已发送邮件追加到“已发送”文件夹。</summary>
+    public async Task AppendToSentAsync(
+        MailAccountSettings account, string plainPassword, MimeMessage message, CancellationToken ct)
+    {
+        using var client = new ImapClient();
+        await ConnectAsync(client, account, plainPassword, ct);
+
+        var sent = await FindSentFolderAsync(client, ct)
+                   ?? throw new InvalidOperationException("未找到“已发送”文件夹。");
+
+        await sent.AppendAsync(message, MessageFlags.Seen, ct);
+        await client.DisconnectAsync(true, ct);
+    }
+
+    private static async Task<IMailFolder?> FindSentFolderAsync(ImapClient client, CancellationToken ct)
+    {
+        try
+        {
+            return client.GetFolder(SpecialFolder.Sent);
+        }
+        catch
+        {
+            // 优先使用服务器声明的特殊文件夹，失败时按名称回退
+        }
+
+        foreach (var ns in client.PersonalNamespaces)
+        {
+            try
+            {
+                var folders = await client.GetFoldersAsync(ns, false, ct);
+                var match = folders.FirstOrDefault(IsSentFolder);
+                if (match != null) return match;
+            }
+            catch
+            {
+                // 忽略单个命名空间失败
+            }
+        }
+
+        return null;
+    }
+
+    private static bool IsSentFolder(IMailFolder folder)
+    {
+        if (folder.Attributes.HasFlag(FolderAttributes.Sent)) return true;
+
+        var name = folder.Name;
+        return name.Contains("sent", StringComparison.OrdinalIgnoreCase) ||
+               name.Contains("已发送");
+    }
+
     private async Task ConnectAsync(ImapClient client, MailAccountSettings account, string plainPassword, CancellationToken ct)
     {
         // 默认 120 秒过长，单个账号卡住会阻塞整轮同步

@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 using ClassIsland.Core.Abstractions.Controls;
 using ClassIsland.Core.Attributes;
 using ClassIsland.Shared;
@@ -20,6 +21,7 @@ namespace MailIsland.SettingsPage.Views;
 public partial class MailTabPage : SettingsPageBase
 {
     private readonly MailTabViewModel _vm;
+    private ComposeViewModel? _compose;
 
     public MailTabPage()
     {
@@ -130,4 +132,133 @@ public partial class MailTabPage : SettingsPageBase
     }
 
     private void OnOpenFolderClick(object? sender, RoutedEventArgs e) => _vm.OpenContainingFolder();
+
+    // ---------- 写邮件 ----------
+
+    private void OnComposeClick(object? sender, RoutedEventArgs e) => OpenCompose(null, null, null);
+
+    private void OnReplyClick(object? sender, RoutedEventArgs e)
+    {
+        if (_vm.SelectedMessage is not { } mail) return;
+
+        OpenCompose(mail.SenderEmail, PrefixSubject(mail.Subject, "Re:"), BuildQuote(mail));
+    }
+
+    private void OnForwardClick(object? sender, RoutedEventArgs e)
+    {
+        if (_vm.SelectedMessage is not { } mail) return;
+
+        OpenCompose(null, PrefixSubject(mail.Subject, "Fwd:"), BuildQuote(mail));
+    }
+
+    private void OpenCompose(string? to, string? subject, string? body)
+    {
+        if (_vm.SelectedAccount is not { } account)
+        {
+            _vm.Status = "请先到“账号”页添加邮箱账号。";
+            return;
+        }
+
+        _compose = new ComposeViewModel(
+            account,
+            IAppHost.GetService<MailIslandConfigHandler>(),
+            IAppHost.GetService<ISmtpClientService>(),
+            IAppHost.GetService<IMailClientService>());
+        _compose.ApplyPrefill(to, subject, body);
+
+        ComposeView.DataContext = _compose;
+        DiscardOverlay.IsVisible = false;
+
+        HeaderBar.IsVisible = false;
+        ListView.IsVisible = false;
+        DetailView.IsVisible = false;
+        ComposeView.IsVisible = true;
+    }
+
+    private void OnComposeBackClick(object? sender, RoutedEventArgs e)
+    {
+        if (_compose?.HasContent == true)
+        {
+            DiscardOverlay.IsVisible = true;
+            return;
+        }
+
+        CloseCompose();
+    }
+
+    private void OnDiscardCancelClick(object? sender, RoutedEventArgs e) => DiscardOverlay.IsVisible = false;
+
+    private void OnDiscardConfirmClick(object? sender, RoutedEventArgs e)
+    {
+        DiscardOverlay.IsVisible = false;
+        CloseCompose();
+    }
+
+    private void CloseCompose()
+    {
+        ComposeView.IsVisible = false;
+        ComposeView.DataContext = null;
+        _compose = null;
+
+        MessageList.SelectedItem = null;
+        ShowList();
+    }
+
+    private async void OnSendClick(object? sender, RoutedEventArgs e)
+    {
+        if (_compose is null) return;
+
+        if (await _compose.SendAsync())
+        {
+            CloseCompose();
+            _vm.Status = "已发送";
+        }
+    }
+
+    private async void OnAddAttachmentClick(object? sender, RoutedEventArgs e)
+    {
+        if (_compose is null) return;
+
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel is null) return;
+
+        var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "选择附件",
+            AllowMultiple = true,
+        });
+
+        _compose.AddAttachments(files.Select(file => file.Path.LocalPath));
+    }
+
+    private void OnRemoveComposeAttachmentClick(object? sender, RoutedEventArgs e)
+    {
+        if (_compose is not null && sender is Button { DataContext: ComposeAttachment attachment })
+        {
+            _compose.RemoveAttachment(attachment);
+        }
+    }
+
+    private static string PrefixSubject(string subject, string prefix)
+    {
+        var text = string.IsNullOrWhiteSpace(subject) ? "(无主题)" : subject.Trim();
+        return text.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+            ? text
+            : $"{prefix} {text}";
+    }
+
+    private static string BuildQuote(MailMessage mail)
+    {
+        var senderName = mail.SenderName.Trim().Trim('"').Trim();
+        var sender = string.IsNullOrWhiteSpace(mail.SenderEmail)
+            ? senderName
+            : string.IsNullOrWhiteSpace(senderName)
+                ? mail.SenderEmail
+                : $"{senderName} <{mail.SenderEmail}>";
+        var date = mail.Date == default
+            ? "未知"
+            : mail.Date.ToLocalTime().ToString("yyyy-MM-dd HH:mm");
+
+        return $"\n\n---------- 原邮件 ----------\n发件人：{sender}\n时间：{date}\n\n{mail.TextBody}";
+    }
 }

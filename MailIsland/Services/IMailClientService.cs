@@ -1,5 +1,6 @@
 using MailIsland.Logic.Config;
 using MailIsland.Models;
+using MimeKit;
 
 namespace MailIsland.Services;
 
@@ -23,4 +24,8 @@ public interface IMailClientService
     /// <summary>把邮件标记为已读（服务器端 \Seen）。</summary>
     Task MarkAsReadAsync(
         MailAccountSettings account, string plainPassword, uint uid, CancellationToken ct);
+
+    /// <summary>把已发送邮件追加到“已发送”文件夹。</summary>
+    Task AppendToSentAsync(
+        MailAccountSettings account, string plainPassword, MimeMessage message, CancellationToken ct);
 }
