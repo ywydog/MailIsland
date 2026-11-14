@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using ClassIsland.Core.Abstractions.Controls;
 using ClassIsland.Core.Attributes;
+using ClassIsland.Core.Icons;
 using ClassIsland.Shared;
 using MailIsland.ConfigHandlers;
 using MailIsland.Logic.Presets;
@@ -15,7 +16,7 @@ namespace MailIsland.SettingsPage.Views;
 
 /// <summary>账号设置页。</summary>
 [Group(GlobalConstants.SettingsGroupId)]
-[SettingsPageInfo("mailisland.settings.account", "账号", "\uE078", "\uE078")]
+[SettingsPageInfo("mailisland.settings.account", "账号", FluentIcons.PersonRegular, FluentIcons.PersonRegular)]
 public partial class AccountTabPage : SettingsPageBase
 {
     private readonly AccountTabViewModel _vm;

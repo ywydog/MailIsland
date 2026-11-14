@@ -2,6 +2,7 @@ using ClassIsland.Core;
 using ClassIsland.Core.Abstractions;
 using ClassIsland.Core.Abstractions.Services;
 using ClassIsland.Core.Extensions.Registry;
+using ClassIsland.Core.Icons;
 using ClassIsland.Core.Models.Automation;
 using ClassIsland.Shared;
 using MailIsland.ConfigHandlers;
@@ -57,7 +58,7 @@ public partial class Plugin : PluginBase
         BuildActionMenuTree();
 
         // 注册设置页分组（折叠下方设置页为一个“邮箱设置”分组）
-        services.AddSettingsPageGroup(Shared.GlobalConstants.SettingsGroupId, "\uE8B7", "邮箱设置");
+        services.AddSettingsPageGroup(Shared.GlobalConstants.SettingsGroupId, FluentIcons.MailRegular, "邮箱设置");
 
         // 注册设置页（多个独立设置页，[Group] 特性自动归入上述分组）
         services.AddSettingsPage<SettingsPage.Views.AccountTabPage>();
@@ -75,11 +76,11 @@ public partial class Plugin : PluginBase
     /// <summary>在“添加行动”菜单中构建“MailIsland 行动”分组。</summary>
     private static void BuildActionMenuTree()
     {
-        IActionService.ActionMenuTree.Add(new ActionMenuTreeGroup("MailIsland 行动", "\uE715",
-            new ActionMenuTreeGroup("邮件…", "\uE724",
-                new ActionMenuTreeItem(Shared.GlobalConstants.SendMailActionId, "发送邮件", "\uE724"),
-                new ActionMenuTreeItem(Shared.GlobalConstants.SetMailNotificationActionId, "开关邮件提醒", "\uE7ED"),
-                new ActionMenuTreeItem(Shared.GlobalConstants.SetQuietHoursActionId, "开关免打扰", "\uE708"),
-                new ActionMenuTreeItem(Shared.GlobalConstants.SendScreenshotActionId, "将屏幕截图发送", "\uEEE7"))));
+        IActionService.ActionMenuTree.Add(new ActionMenuTreeGroup("MailIsland 行动", FluentIcons.MailRegular,
+            new ActionMenuTreeGroup("邮件…", FluentIcons.MailInboxRegular,
+                new ActionMenuTreeItem(Shared.GlobalConstants.SendMailActionId, "发送邮件", FluentIcons.SendRegular),
+                new ActionMenuTreeItem(Shared.GlobalConstants.SetMailNotificationActionId, "开关邮件提醒", FluentIcons.MailAlertRegular),
+                new ActionMenuTreeItem(Shared.GlobalConstants.SetQuietHoursActionId, "开关免打扰", FluentIcons.AlertOffRegular),
+                new ActionMenuTreeItem(Shared.GlobalConstants.SendScreenshotActionId, "将屏幕截图发送", FluentIcons.ScreenshotRegular))));
     }
 }

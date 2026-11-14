@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using ClassIsland.Core.Abstractions.Controls;
 using ClassIsland.Core.Attributes;
+using ClassIsland.Core.Icons;
 using ClassIsland.Shared;
 using MailIsland.ConfigHandlers;
 using MailIsland.Models;
@@ -15,7 +16,7 @@ namespace MailIsland.SettingsPage.Views;
 
 /// <summary>发件箱设置页：浏览已发送邮件并写新邮件。</summary>
 [Group(GlobalConstants.SettingsGroupId)]
-[SettingsPageInfo("mailisland.settings.sent", "发件箱", "\uE724", "\uE724")]
+[SettingsPageInfo("mailisland.settings.sent", "发件箱", FluentIcons.SendRegular, FluentIcons.SendRegular)]
 public partial class SentTabPage : SettingsPageBase
 {
     private readonly SentTabViewModel _vm;

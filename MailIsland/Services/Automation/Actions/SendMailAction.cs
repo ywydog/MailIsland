@@ -1,5 +1,6 @@
 using ClassIsland.Core.Abstractions.Automation;
 using ClassIsland.Core.Attributes;
+using ClassIsland.Core.Icons;
 using MailIsland.ConfigHandlers;
 using MailIsland.Logic.Config;
 using MailIsland.Logic.Mail;
@@ -12,7 +13,7 @@ using MimeKit.Utils;
 namespace MailIsland.Services.Automation.Actions;
 
 /// <summary>“发送邮件”自动化行动。</summary>
-[ActionInfo(GlobalConstants.SendMailActionId, "发送邮件", "\uE724", addDefaultToMenu: false)]
+[ActionInfo(GlobalConstants.SendMailActionId, "发送邮件", FluentIcons.SendRegular, addDefaultToMenu: false)]
 public class SendMailAction(
     ILogger<SendMailAction> logger,
     MailIslandConfigHandler config,

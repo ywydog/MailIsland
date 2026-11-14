@@ -3,6 +3,7 @@ using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using ClassIsland.Core.Abstractions.Automation;
 using ClassIsland.Core.Attributes;
+using ClassIsland.Core.Icons;
 using MailIsland.ConfigHandlers;
 using MailIsland.Logic.Config;
 using MailIsland.Logic.Mail;
@@ -15,7 +16,7 @@ using MimeKit.Utils;
 namespace MailIsland.Services.Automation.Actions;
 
 /// <summary>“将屏幕截图发送”自动化行动：捕获全部显示器并作为 PNG 附件发送。</summary>
-[ActionInfo(GlobalConstants.SendScreenshotActionId, "将屏幕截图发送", "\uEEE7", addDefaultToMenu: false)]
+[ActionInfo(GlobalConstants.SendScreenshotActionId, "将屏幕截图发送", FluentIcons.ScreenshotRegular, addDefaultToMenu: false)]
 public class SendScreenshotAction(
     ILogger<SendScreenshotAction> logger,
     MailIslandConfigHandler config,

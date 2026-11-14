@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using ClassIsland.Core.Abstractions.Controls;
 using ClassIsland.Core.Attributes;
+using ClassIsland.Core.Icons;
 using ClassIsland.Shared;
 using MailIsland.ConfigHandlers;
 using MailIsland.Models;
@@ -16,7 +17,7 @@ namespace MailIsland.SettingsPage.Views;
 
 /// <summary>邮件设置页。</summary>
 [Group(GlobalConstants.SettingsGroupId)]
-[SettingsPageInfo("mailisland.settings.mail", "邮件", "\uE8B7", "\uE8B7")]
+[SettingsPageInfo("mailisland.settings.mail", "邮件", FluentIcons.MailInboxRegular, FluentIcons.MailInboxRegular)]
 public partial class MailTabPage : SettingsPageBase
 {
     private readonly MailTabViewModel _vm;

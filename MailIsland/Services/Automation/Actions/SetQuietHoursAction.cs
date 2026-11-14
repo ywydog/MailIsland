@@ -1,5 +1,6 @@
 using ClassIsland.Core.Abstractions.Automation;
 using ClassIsland.Core.Attributes;
+using ClassIsland.Core.Icons;
 using MailIsland.ConfigHandlers;
 using MailIsland.Models.Automation;
 using MailIsland.Shared;
@@ -8,7 +9,7 @@ using Microsoft.Extensions.Logging;
 namespace MailIsland.Services.Automation.Actions;
 
 /// <summary>“开关免打扰”自动化行动。</summary>
-[ActionInfo(GlobalConstants.SetQuietHoursActionId, "开关免打扰", "\uE708", addDefaultToMenu: false)]
+[ActionInfo(GlobalConstants.SetQuietHoursActionId, "开关免打扰", FluentIcons.AlertOffRegular, addDefaultToMenu: false)]
 public class SetQuietHoursAction(
     ILogger<SetQuietHoursAction> logger,
     MailIslandConfigHandler config) : ActionBase<NotificationToggleSettings>

@@ -1,5 +1,6 @@
 using ClassIsland.Core.Abstractions.Automation;
 using ClassIsland.Core.Attributes;
+using ClassIsland.Core.Icons;
 using MailIsland.Models;
 using MailIsland.Models.Automation;
 using MailIsland.Shared;
@@ -11,7 +12,7 @@ namespace MailIsland.Services.Automation.Triggers;
 /// 新邮件命中关键词自动化触发器。
 /// <para>订阅“新邮件到达”事件，按用户配置（标题/正文 + 关键词）判断，命中则触发。</para>
 /// </summary>
-[TriggerInfo(GlobalConstants.NewMailTriggerId, "新邮件包含关键词", "\ue8b7")]
+[TriggerInfo(GlobalConstants.NewMailTriggerId, "新邮件包含关键词", FluentIcons.MailAlertRegular)]
 public class NewMailTrigger(
     MailPollingService pollingService,
     ILogger<NewMailTrigger> logger) : TriggerBase<NewMailTriggerSettings>

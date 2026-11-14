@@ -1,5 +1,6 @@
 using ClassIsland.Core.Abstractions.Automation;
 using ClassIsland.Core.Attributes;
+using ClassIsland.Core.Icons;
 using MailIsland.ConfigHandlers;
 using MailIsland.Models.Automation;
 using MailIsland.Shared;
@@ -8,7 +9,7 @@ using Microsoft.Extensions.Logging;
 namespace MailIsland.Services.Automation.Actions;
 
 /// <summary>“开关邮件提醒”自动化行动。</summary>
-[ActionInfo(GlobalConstants.SetMailNotificationActionId, "开关邮件提醒", "\uE7ED", addDefaultToMenu: false)]
+[ActionInfo(GlobalConstants.SetMailNotificationActionId, "开关邮件提醒", FluentIcons.MailAlertRegular, addDefaultToMenu: false)]
 public class SetMailNotificationEnabledAction(
     ILogger<SetMailNotificationEnabledAction> logger,
     MailIslandConfigHandler config) : ActionBase<NotificationToggleSettings>

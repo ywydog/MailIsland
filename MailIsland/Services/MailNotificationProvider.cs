@@ -1,5 +1,6 @@
 using ClassIsland.Core.Abstractions.Services.NotificationProviders;
 using ClassIsland.Core.Attributes;
+using ClassIsland.Core.Icons;
 using ClassIsland.Core.Models.Notification;
 using MailIsland.Logic.Config;
 using MailIsland.Logic.Shared;
@@ -16,7 +17,7 @@ namespace MailIsland.Services;
 [NotificationProviderInfo(
     GlobalConstants.NotificationProviderGuid,
     "邮箱新邮件提醒",
-    "\ue8b7",
+    FluentIcons.MailAlertRegular,
     "通过邮箱插件拉取新邮件，命中关键词时推送提醒。")]
 public sealed class MailNotificationProvider : NotificationProviderBase
 {

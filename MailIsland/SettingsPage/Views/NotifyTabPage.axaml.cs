@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using ClassIsland.Core.Abstractions.Controls;
 using ClassIsland.Core.Attributes;
+using ClassIsland.Core.Icons;
 using ClassIsland.Shared;
 using MailIsland.ConfigHandlers;
 using MailIsland.Logic.Config;
@@ -12,7 +13,7 @@ namespace MailIsland.SettingsPage.Views;
 
 /// <summary>消息提醒设置页。</summary>
 [Group(GlobalConstants.SettingsGroupId)]
-[SettingsPageInfo("mailisland.settings.notify", "消息提醒", "\uE82E", "\uE82E")]
+[SettingsPageInfo("mailisland.settings.notify", "消息提醒", FluentIcons.MailAlertRegular, FluentIcons.MailAlertRegular)]
 public partial class NotifyTabPage : SettingsPageBase
 {
     private readonly NotifyTabViewModel _vm;
