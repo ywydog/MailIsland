@@ -35,6 +35,8 @@
     </PackageReference>
     <PackageReference Include="MailKit" Version="4.17.0" />
     <PackageReference Include="HtmlAgilityPack" Version="1.11.71" />
+    <!-- 屏幕截图行动：Windows GDI+ 位图捕获与 PNG 编码 -->
+    <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>

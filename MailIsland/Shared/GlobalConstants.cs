@@ -21,6 +21,9 @@ public static class GlobalConstants
     /// <summary>“开关免打扰”自动化行动 ID。</summary>
     public const string SetQuietHoursActionId = "mailisland.action.setquiethours";
 
+    /// <summary>“将屏幕截图发送”自动化行动 ID。</summary>
+    public const string SendScreenshotActionId = "mailisland.action.sendscreenshot";
+
     /// <summary>设置页分组 ID（把多个设置页折叠为“邮箱设置”分组）。</summary>
     public const string SettingsGroupId = "mailisland.settings";
 }

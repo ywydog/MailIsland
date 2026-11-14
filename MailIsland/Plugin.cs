@@ -51,6 +51,7 @@ public partial class Plugin : PluginBase
         services.AddAction<Services.Automation.Actions.SendMailAction, Controls.Automation.SendMailActionSettingsControl>();
         services.AddAction<Services.Automation.Actions.SetMailNotificationEnabledAction, Controls.Automation.NotificationToggleSettingsControl>();
         services.AddAction<Services.Automation.Actions.SetQuietHoursAction, Controls.Automation.NotificationToggleSettingsControl>();
+        services.AddAction<Services.Automation.Actions.SendScreenshotAction, Controls.Automation.SendScreenshotActionSettingsControl>();
 
         // 行动在“添加行动”菜单中归入分组，不单独平铺
         BuildActionMenuTree();
@@ -78,6 +79,7 @@ public partial class Plugin : PluginBase
             new ActionMenuTreeGroup("邮件…", "\uE724",
                 new ActionMenuTreeItem(Shared.GlobalConstants.SendMailActionId, "发送邮件", "\uE724"),
                 new ActionMenuTreeItem(Shared.GlobalConstants.SetMailNotificationActionId, "开关邮件提醒", "\uE7ED"),
-                new ActionMenuTreeItem(Shared.GlobalConstants.SetQuietHoursActionId, "开关免打扰", "\uE708"))));
+                new ActionMenuTreeItem(Shared.GlobalConstants.SetQuietHoursActionId, "开关免打扰", "\uE708"),
+                new ActionMenuTreeItem(Shared.GlobalConstants.SendScreenshotActionId, "将屏幕截图发送", "\uEEE7"))));
     }
 }
