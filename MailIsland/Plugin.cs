@@ -1,6 +1,8 @@
 using ClassIsland.Core;
 using ClassIsland.Core.Abstractions;
+using ClassIsland.Core.Abstractions.Services;
 using ClassIsland.Core.Extensions.Registry;
+using ClassIsland.Core.Models.Automation;
 using ClassIsland.Shared;
 using MailIsland.ConfigHandlers;
 using MailIsland.Services;
@@ -50,6 +52,9 @@ public partial class Plugin : PluginBase
         services.AddAction<Services.Automation.Actions.SetMailNotificationEnabledAction, Controls.Automation.NotificationToggleSettingsControl>();
         services.AddAction<Services.Automation.Actions.SetQuietHoursAction, Controls.Automation.NotificationToggleSettingsControl>();
 
+        // 行动在“添加行动”菜单中归入分组，不单独平铺
+        BuildActionMenuTree();
+
         // 注册设置页分组（折叠下方设置页为一个“邮箱设置”分组）
         services.AddSettingsPageGroup(Shared.GlobalConstants.SettingsGroupId, "\uE8B7", "邮箱设置");
 
@@ -64,5 +69,15 @@ public partial class Plugin : PluginBase
         {
             IAppHost.GetService<MailIslandConfigHandler>()?.Save();
         };
+    }
+
+    /// <summary>在“添加行动”菜单中构建“MailIsland 行动”分组。</summary>
+    private static void BuildActionMenuTree()
+    {
+        IActionService.ActionMenuTree.Add(new ActionMenuTreeGroup("MailIsland 行动", "\uE715",
+            new ActionMenuTreeGroup("邮件…", "\uE724",
+                new ActionMenuTreeItem(Shared.GlobalConstants.SendMailActionId, "发送邮件", "\uE724"),
+                new ActionMenuTreeItem(Shared.GlobalConstants.SetMailNotificationActionId, "开关邮件提醒", "\uE7ED"),
+                new ActionMenuTreeItem(Shared.GlobalConstants.SetQuietHoursActionId, "开关免打扰", "\uE708"))));
     }
 }

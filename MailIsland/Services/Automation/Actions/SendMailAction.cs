@@ -12,7 +12,7 @@ using MimeKit.Utils;
 namespace MailIsland.Services.Automation.Actions;
 
 /// <summary>“发送邮件”自动化行动。</summary>
-[ActionInfo(GlobalConstants.SendMailActionId, "发送邮件", "\uE724")]
+[ActionInfo(GlobalConstants.SendMailActionId, "发送邮件", "\uE724", addDefaultToMenu: false)]
 public class SendMailAction(
     ILogger<SendMailAction> logger,
     MailIslandConfigHandler config,

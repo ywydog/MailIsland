@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 namespace MailIsland.Services.Automation.Actions;
 
 /// <summary>“开关邮件提醒”自动化行动。</summary>
-[ActionInfo(GlobalConstants.SetMailNotificationActionId, "开关邮件提醒", "\uE7ED")]
+[ActionInfo(GlobalConstants.SetMailNotificationActionId, "开关邮件提醒", "\uE7ED", addDefaultToMenu: false)]
 public class SetMailNotificationEnabledAction(
     ILogger<SetMailNotificationEnabledAction> logger,
     MailIslandConfigHandler config) : ActionBase<NotificationToggleSettings>
