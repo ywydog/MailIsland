@@ -10,6 +10,14 @@ public sealed class KeywordRule
     public bool Enabled { get; set; } = true;
 }
 
+/// <summary>单条免打扰时段（HH:mm，支持跨午夜）。</summary>
+public sealed class QuietHoursPeriod
+{
+    public string Start { get; set; } = "21:00";
+    public string End { get; set; } = "07:00";
+    public bool Enabled { get; set; } = true;
+}
+
 /// <summary>全局配置（持久化结构）。</summary>
 public sealed class MailIslandConfigData
 {
@@ -36,11 +44,15 @@ public sealed class MailIslandConfigData
     public bool SaveSentCopy { get; set; } = true;
     /// <summary>多封新邮件合并为一条提醒。</summary>
     public bool NotifySummaryMode { get; set; }
-    /// <summary>是否启用免打扰时段。</summary>
+    /// <summary>是否启用免打扰。</summary>
     public bool QuietHoursEnabled { get; set; }
-    /// <summary>免打扰开始时间（HH:mm）。</summary>
+    /// <summary>免打扰时段列表。</summary>
+    public List<QuietHoursPeriod> QuietHoursPeriods { get; set; } = new();
+    /// <summary>上课时是否免打扰（需同时启用免打扰）。</summary>
+    public bool QuietDuringClass { get; set; }
+    /// <summary>旧版单时段开始时间，仅用于迁移。</summary>
     public string QuietHoursStart { get; set; } = "21:00";
-    /// <summary>免打扰结束时间（HH:mm）。</summary>
+    /// <summary>旧版单时段结束时间，仅用于迁移。</summary>
     public string QuietHoursEnd { get; set; } = "07:00";
 }
 

@@ -25,8 +25,25 @@ public partial class NotifyTabPage : SettingsPageBase
         DataContext = _vm;
 
         KeywordList.ItemsSource = _vm.Keywords;
+        QuietHoursList.ItemsSource = _vm.QuietHoursPeriods;
         AddKeywordButton.Click += OnAddKeywordClick;
+        AddQuietHoursButton.Click += OnAddQuietHoursClick;
         StatusText.Text = "修改关键词后会即时保存。";
+    }
+
+    private void OnAddQuietHoursClick(object? sender, RoutedEventArgs e)
+    {
+        _vm.AddQuietHoursPeriod();
+        StatusText.Text = "已添加免打扰时段。";
+    }
+
+    private void OnRemoveQuietHoursClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { DataContext: QuietHoursPeriodViewModel period })
+        {
+            _vm.RemoveQuietHoursPeriod(period);
+            StatusText.Text = "已删除免打扰时段。";
+        }
     }
 
     private void OnAddKeywordClick(object? sender, RoutedEventArgs e)

@@ -52,25 +52,56 @@
             </controls:FASettingsExpander>
 
             <controls:FASettingsExpander Header="免打扰"
-                                       Description="在指定时段内不弹出提醒，自动化仍会正常触发">
+                                       Description="在指定时段或上课时不弹出提醒，自动化仍会正常触发">
                 <StackPanel Spacing="10">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <TextBlock Text="启用免打扰" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                         <ToggleSwitch IsChecked="{Binding QuietHoursEnabled, Mode=TwoWay}" />
                     </StackPanel>
-                    <StackPanel Orientation="Horizontal" Spacing="12">
-                        <TextBlock Text="开始" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                        <TimePicker SelectedTime="{Binding QuietHoursStartTime, Mode=TwoWay}"
-                                    ClockIdentifier="24HourClock"
-                                    MinWidth="140" />
-                        <TextBlock Text="结束" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                        <TimePicker SelectedTime="{Binding QuietHoursEndTime, Mode=TwoWay}"
-                                    ClockIdentifier="24HourClock"
-                                    MinWidth="140" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="上课时免打扰" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <ToggleSwitch IsChecked="{Binding QuietDuringClass, Mode=TwoWay}" />
+                        <TextBlock Text="（ClassIsland 处于上课状态时不提醒，需启用免打扰）" VerticalAlignment="Center"
+                                   FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
                     </StackPanel>
-                    <TextBlock Text="支持跨午夜，例如 21:00 到次日 07:00。"
-                               FontSize="12"
-                               Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+
+                    <ItemsControl x:Name="QuietHoursList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Margin="0,4"
+                                        Padding="12,8"
+                                        CornerRadius="6"
+                                        Background="{DynamicResource LayerFillColorDefaultBrush}">
+                                    <Grid ColumnDefinitions="Auto,8,Auto,8,*">
+                                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
+                                            <TextBlock Text="开始" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                            <TimePicker SelectedTime="{Binding StartTime, Mode=TwoWay}"
+                                                        ClockIdentifier="24HourClock"
+                                                        MinWidth="120" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
+                                            <TextBlock Text="结束" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                            <TimePicker SelectedTime="{Binding EndTime, Mode=TwoWay}"
+                                                        ClockIdentifier="24HourClock"
+                                                        MinWidth="120" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                                            <ToggleSwitch IsChecked="{Binding Enabled, Mode=TwoWay}" />
+                                            <Button Content="删除" Click="OnRemoveQuietHoursClick" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Button x:Name="AddQuietHoursButton" Content="添加时段" />
+                        <TextBlock Text="每段支持跨午夜，例如 21:00 到次日 07:00。"
+                                   VerticalAlignment="Center"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                    </StackPanel>
                 </StackPanel>
             </controls:FASettingsExpander>
 

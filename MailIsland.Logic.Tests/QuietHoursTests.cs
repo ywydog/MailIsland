@@ -1,3 +1,4 @@
+using MailIsland.Logic.Config;
 using MailIsland.Logic.Mail;
 using Xunit;
 
@@ -38,5 +39,40 @@ public class QuietHoursTests
 
         var now = new DateTime(2026, 1, 1, 12, 0, 0);
         Assert.False(QuietHours.IsQuietTime(now, value, "07:00"));
+    }
+
+    [Fact]
+    public void MatchesAnyEnabledPeriod()
+    {
+        var periods = new List<QuietHoursPeriod>
+        {
+            new() { Start = "12:00", End = "13:00" },
+            new() { Start = "22:00", End = "07:00" },
+        };
+
+        Assert.True(QuietHours.IsQuietTime(new DateTime(2026, 1, 1, 12, 30, 0), periods));
+        Assert.True(QuietHours.IsQuietTime(new DateTime(2026, 1, 1, 23, 0, 0), periods));
+        Assert.False(QuietHours.IsQuietTime(new DateTime(2026, 1, 1, 15, 0, 0), periods));
+    }
+
+    [Fact]
+    public void DisabledPeriodIsIgnored()
+    {
+        var periods = new List<QuietHoursPeriod>
+        {
+            new() { Start = "09:00", End = "18:00", Enabled = false },
+            new() { Start = "22:00", End = "07:00" },
+        };
+
+        Assert.False(QuietHours.IsQuietTime(new DateTime(2026, 1, 1, 10, 0, 0), periods));
+        Assert.True(QuietHours.IsQuietTime(new DateTime(2026, 1, 1, 23, 0, 0), periods));
+    }
+
+    [Fact]
+    public void EmptyOrNullPeriodsIsNotQuiet()
+    {
+        var now = new DateTime(2026, 1, 1, 12, 0, 0);
+        Assert.False(QuietHours.IsQuietTime(now, new List<QuietHoursPeriod>()));
+        Assert.False(QuietHours.IsQuietTime(now, (IEnumerable<QuietHoursPeriod>?)null));
     }
 }

@@ -89,12 +89,32 @@ public sealed class MailIslandConfigHandler
             rule.Keyword = Unprotect(rule.Keyword, ref _needsSave);
         }
 
+        MigrateQuietHours(data);
+
         if (_needsSave)
         {
             _logger.LogInformation("检测到旧版明文或无盐字段，将按新盐重新加密保存");
         }
 
         return data;
+    }
+
+    /// <summary>把旧版单时段配置迁移为时段列表；列表已有内容时保持不变。</summary>
+    private void MigrateQuietHours(MailIslandConfigData data)
+    {
+        if (data.QuietHoursPeriods.Count > 0) return;
+        if (string.IsNullOrWhiteSpace(data.QuietHoursStart) ||
+            string.IsNullOrWhiteSpace(data.QuietHoursEnd))
+        {
+            return;
+        }
+
+        data.QuietHoursPeriods.Add(new QuietHoursPeriod
+        {
+            Start = data.QuietHoursStart,
+            End = data.QuietHoursEnd,
+        });
+        _needsSave = true;
     }
 
     /// <summary>构造用于落盘的快照，隐私字段全部替换为密文。</summary>
@@ -113,8 +133,16 @@ public sealed class MailIslandConfigHandler
         SaveSentCopy = Data.SaveSentCopy,
         NotifySummaryMode = Data.NotifySummaryMode,
         QuietHoursEnabled = Data.QuietHoursEnabled,
-        QuietHoursStart = Data.QuietHoursStart,
-        QuietHoursEnd = Data.QuietHoursEnd,
+        // 旧版本只认单时段字段，落盘时同步第一段，保证降级后仍能免打扰
+        QuietHoursStart = Data.QuietHoursPeriods.FirstOrDefault()?.Start ?? "",
+        QuietHoursEnd = Data.QuietHoursPeriods.FirstOrDefault()?.End ?? "",
+        QuietHoursPeriods = Data.QuietHoursPeriods.Select(p => new QuietHoursPeriod
+        {
+            Start = p.Start,
+            End = p.End,
+            Enabled = p.Enabled,
+        }).ToList(),
+        QuietDuringClass = Data.QuietDuringClass,
         Accounts = Data.Accounts.Select(a => new MailAccountSettings
         {
             Id = a.Id,

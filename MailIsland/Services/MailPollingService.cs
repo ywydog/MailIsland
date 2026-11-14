@@ -1,4 +1,6 @@
 using Avalonia.Threading;
+using ClassIsland.Core.Abstractions.Services;
+using ClassIsland.Shared.Enums;
 using MailIsland.ConfigHandlers;
 using MailIsland.Logic.Config;
 using MailIsland.Logic.Keyword;
@@ -18,6 +20,7 @@ public sealed class MailPollingService : BackgroundService
     private readonly MailIslandConfigHandler _config;
     private readonly IMailClientService _mail;
     private readonly MailNotificationProvider _notifier;
+    private readonly ILessonsService _lessons;
     private readonly ILogger<MailPollingService> _logger;
 
     private readonly Dictionary<string, uint> _lastUidByAccount = new();
@@ -27,11 +30,13 @@ public sealed class MailPollingService : BackgroundService
         MailIslandConfigHandler config,
         IMailClientService mail,
         MailNotificationProvider notifier,
+        ILessonsService lessons,
         ILogger<MailPollingService> logger)
     {
         _config = config;
         _mail = mail;
         _notifier = notifier;
+        _lessons = lessons;
         _logger = logger;
     }
 
@@ -217,11 +222,19 @@ public sealed class MailPollingService : BackgroundService
             return;
         }
 
-        if (_config.Data.QuietHoursEnabled &&
-            QuietHours.IsQuietTime(DateTime.Now, _config.Data.QuietHoursStart, _config.Data.QuietHoursEnd))
+        if (_config.Data.QuietHoursEnabled)
         {
-            _logger.LogDebug("跳过新邮件提醒：当前处于免打扰时段");
-            return;
+            if (QuietHours.IsQuietTime(DateTime.Now, _config.Data.QuietHoursPeriods))
+            {
+                _logger.LogDebug("跳过新邮件提醒：当前处于免打扰时段");
+                return;
+            }
+
+            if (_config.Data.QuietDuringClass && _lessons.CurrentState == TimeState.OnClass)
+            {
+                _logger.LogDebug("跳过新邮件提醒：当前正在上课");
+                return;
+            }
         }
 
         var matched = new List<(MailMessage Mail, string? Keyword)>();

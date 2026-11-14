@@ -1,8 +1,18 @@
+using MailIsland.Logic.Config;
+
 namespace MailIsland.Logic.Mail;
 
 /// <summary>免打扰时段判断（支持跨午夜）。</summary>
 public static class QuietHours
 {
+    /// <summary>当前是否命中列表中的任一时段；列表为空或全部停用时返回 false。</summary>
+    public static bool IsQuietTime(DateTime now, IEnumerable<QuietHoursPeriod>? periods)
+    {
+        if (periods == null) return false;
+
+        return periods.Any(p => p.Enabled && IsQuietTime(now, p.Start, p.End));
+    }
+
     /// <summary>当前是否处于免打扰时段；时间格式非法或起止相同时返回 false。</summary>
     public static bool IsQuietTime(DateTime now, string? start, string? end)
     {

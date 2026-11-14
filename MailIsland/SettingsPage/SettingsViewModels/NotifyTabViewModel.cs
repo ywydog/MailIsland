@@ -22,14 +22,15 @@ public partial class NotifyTabViewModel : ObservableObject
     [ObservableProperty] private bool _notificationSpeechEnabled;
     [ObservableProperty] private bool _notifySummaryMode;
     [ObservableProperty] private bool _quietHoursEnabled;
-    [ObservableProperty] private TimeSpan? _quietHoursStartTime;
-    [ObservableProperty] private TimeSpan? _quietHoursEndTime;
+    [ObservableProperty] private bool _quietDuringClass;
     [ObservableProperty] private string _status = "";
 
     public NotifyTabViewModel(MailIslandConfigHandler config)
     {
         _config = config;
         Keywords = new ObservableCollection<KeywordRule>(config.Data.KeywordRules);
+        QuietHoursPeriods = new ObservableCollection<QuietHoursPeriodViewModel>(
+            config.Data.QuietHoursPeriods.Select(p => new QuietHoursPeriodViewModel(p, SaveQuietHours)));
 
         _notifyEnabled = config.Data.NotifyEnabled;
         _pollIntervalMinutes = config.Data.PollIntervalMinutes;
@@ -42,11 +43,12 @@ public partial class NotifyTabViewModel : ObservableObject
         _notificationSpeechEnabled = config.Data.NotificationSpeechEnabled;
         _notifySummaryMode = config.Data.NotifySummaryMode;
         _quietHoursEnabled = config.Data.QuietHoursEnabled;
-        _quietHoursStartTime = ParseTime(config.Data.QuietHoursStart);
-        _quietHoursEndTime = ParseTime(config.Data.QuietHoursEnd);
+        _quietDuringClass = config.Data.QuietDuringClass;
     }
 
     public ObservableCollection<KeywordRule> Keywords { get; }
+
+    public ObservableCollection<QuietHoursPeriodViewModel> QuietHoursPeriods { get; }
 
     public Array MatchScopes => Enum.GetValues(typeof(KeywordMatchScope));
 
@@ -149,26 +151,30 @@ public partial class NotifyTabViewModel : ObservableObject
         _config.Save();
     }
 
-    partial void OnQuietHoursStartTimeChanged(TimeSpan? value)
+    partial void OnQuietDuringClassChanged(bool value)
     {
-        if (value is not { } time) return;
-
-        _config.Data.QuietHoursStart = FormatTime(time);
+        _config.Data.QuietDuringClass = value;
         _config.Save();
     }
 
-    partial void OnQuietHoursEndTimeChanged(TimeSpan? value)
+    /// <summary>添加一个免打扰时段。</summary>
+    public void AddQuietHoursPeriod()
     {
-        if (value is not { } time) return;
-
-        _config.Data.QuietHoursEnd = FormatTime(time);
-        _config.Save();
+        var period = new QuietHoursPeriod { Start = "22:00", End = "07:00" };
+        _config.Data.QuietHoursPeriods.Add(period);
+        QuietHoursPeriods.Add(new QuietHoursPeriodViewModel(period, SaveQuietHours));
+        SaveQuietHours();
     }
 
-    private static TimeSpan? ParseTime(string? value) =>
-        TimeSpan.TryParse(value, out var time) ? time : null;
+    /// <summary>删除指定免打扰时段。</summary>
+    public void RemoveQuietHoursPeriod(QuietHoursPeriodViewModel period)
+    {
+        _config.Data.QuietHoursPeriods.Remove(period.Model);
+        QuietHoursPeriods.Remove(period);
+        SaveQuietHours();
+    }
 
-    private static string FormatTime(TimeSpan time) => $"{time.Hours:00}:{time.Minutes:00}";
+    private void SaveQuietHours() => _config.Save();
 
     /// <summary>添加一条关键词规则。</summary>
     public void AddKeyword()
@@ -190,4 +196,52 @@ public partial class NotifyTabViewModel : ObservableObject
         _config.Data.KeywordRules = Keywords.ToList();
         _config.Save();
     }
+}
+
+/// <summary>单条免打扰时段的编辑项，修改即回写配置。</summary>
+public sealed partial class QuietHoursPeriodViewModel : ObservableObject
+{
+    private readonly Action _onChanged;
+
+    [ObservableProperty] private TimeSpan? _startTime;
+    [ObservableProperty] private TimeSpan? _endTime;
+    [ObservableProperty] private bool _enabled;
+
+    public QuietHoursPeriodViewModel(QuietHoursPeriod period, Action onChanged)
+    {
+        Model = period;
+        _onChanged = onChanged;
+        _startTime = ParseTime(period.Start);
+        _endTime = ParseTime(period.End);
+        _enabled = period.Enabled;
+    }
+
+    public QuietHoursPeriod Model { get; }
+
+    partial void OnStartTimeChanged(TimeSpan? value)
+    {
+        if (value is not { } time) return;
+
+        Model.Start = FormatTime(time);
+        _onChanged();
+    }
+
+    partial void OnEndTimeChanged(TimeSpan? value)
+    {
+        if (value is not { } time) return;
+
+        Model.End = FormatTime(time);
+        _onChanged();
+    }
+
+    partial void OnEnabledChanged(bool value)
+    {
+        Model.Enabled = value;
+        _onChanged();
+    }
+
+    private static TimeSpan? ParseTime(string? value) =>
+        TimeSpan.TryParse(value, out var time) ? time : null;
+
+    private static string FormatTime(TimeSpan time) => $"{time.Hours:00}:{time.Minutes:00}";
 }
