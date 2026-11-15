@@ -10,6 +10,7 @@ using MailIsland.Services;
 using MailIsland.Shared;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace MailIsland;
 
@@ -22,8 +23,11 @@ public partial class Plugin : PluginBase
         GlobalConstants.PluginConfigFolder = PluginConfigFolder;
         GlobalConstants.PluginFolder = Info.PluginFolderPath;
 
+        // 配置需在注册设置页前加载，用于决定是否注册“提醒增强”分组
+        var configHandler = new MailIslandConfigHandler(NullLogger<MailIslandConfigHandler>.Instance);
+        services.AddSingleton(configHandler);
+
         // 基础服务
-        services.AddSingleton<MailIslandConfigHandler>();
         services.AddSingleton<IMailClientService, MailClientService>();
         services.AddSingleton<ISmtpClientService, SmtpClientService>();
         services.AddSingleton<Storage.MailCacheStore>();
@@ -66,6 +70,14 @@ public partial class Plugin : PluginBase
         services.AddSettingsPage<SettingsPage.Views.MailTabPage>();
         services.AddSettingsPage<SettingsPage.Views.SentTabPage>();
         services.AddSettingsPage<SettingsPage.Views.NotifyTabPage>();
+
+        // “提醒增强”分组与“消息窗口”页面默认不注册，启用消息窗口后才出现
+        if (configHandler.Data.MessageWindow.Enabled)
+        {
+            services.AddSettingsPageGroup(
+                GlobalConstants.EnhanceSettingsGroupId, FluentIcons.AlertRegular, "提醒增强");
+            services.AddSettingsPage<SettingsPage.Views.MessageWindowSettingsPage>();
+        }
 
         // 应用停止时关闭消息窗口并保存配置
         AppBase.Current.AppStopping += (_, _) =>
