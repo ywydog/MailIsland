@@ -132,7 +132,7 @@ public partial class MailTabPage : SettingsPageBase
 
     private async void OnDownloadAttachmentClick(object? sender, RoutedEventArgs e)
     {
-        if (sender is Button { DataContext: MailAttachmentInfo attachment })
+        if (sender is Button { DataContext: AttachmentItemViewModel attachment })
         {
             await _vm.DownloadAttachmentAsync(attachment);
         }

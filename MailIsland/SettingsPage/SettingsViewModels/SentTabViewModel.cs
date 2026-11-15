@@ -35,7 +35,7 @@ public partial class SentTabViewModel : ObservableObject
         Accounts = new ReadOnlyCollection<MailAccountSettings>(
             config.Data.Accounts.Where(a => a.Enabled).ToList());
         Messages = new ObservableCollection<MailMessage>();
-        Attachments = new ObservableCollection<MailAttachmentInfo>();
+        Attachments = new ObservableCollection<AttachmentItemViewModel>();
 
         if (Accounts.Count == 0)
         {
@@ -45,7 +45,7 @@ public partial class SentTabViewModel : ObservableObject
 
     public IReadOnlyList<MailAccountSettings> Accounts { get; }
     public ObservableCollection<MailMessage> Messages { get; }
-    public ObservableCollection<MailAttachmentInfo> Attachments { get; }
+    public ObservableCollection<AttachmentItemViewModel> Attachments { get; }
 
     partial void OnSelectedAccountChanged(MailAccountSettings? value)
     {
@@ -122,7 +122,7 @@ public partial class SentTabViewModel : ObservableObject
 
         foreach (var attachment in value.Attachments)
         {
-            Attachments.Add(attachment);
+            Attachments.Add(new AttachmentItemViewModel(attachment));
         }
 
         var body = value.HasHtml ? value.HtmlBody : null;
@@ -130,9 +130,11 @@ public partial class SentTabViewModel : ObservableObject
             body, value.TextBody, _config.Data.LoadBodyImages, CreateInlineResolver(value));
     }
 
-    /// <summary>下载附件到桌面。</summary>
-    public async Task DownloadAttachmentAsync(MailAttachmentInfo attachment, CancellationToken ct = default)
+    /// <summary>下载附件到桌面，过程中更新条目内的进度。</summary>
+    public async Task DownloadAttachmentAsync(AttachmentItemViewModel attachment, CancellationToken ct = default)
     {
+        if (attachment.IsDownloading) return;
+
         if (SelectedAccount is not { } account || SelectedMessage is not { } mail)
         {
             Status = "请先选择邮件。";
@@ -144,16 +146,22 @@ public partial class SentTabViewModel : ObservableObject
             return;
         }
 
+        attachment.BeginDownload();
+        var progress = new Progress<double>(attachment.ReportProgress);
+
         try
         {
             Status = $"正在下载 {attachment.FileName}…";
             var plainPassword = _config.Protector.Decrypt(account.EncryptedPassword);
             var bytes = await _mail.DownloadAttachmentAsync(
-                account, plainPassword, mail.Uid, attachment.PartSpecifier, ct);
+                account, plainPassword, mail.Uid, attachment.Model.PartSpecifier, ct, progress);
 
             var directory = AttachmentStorage.GetDownloadDirectory();
             var path = AttachmentStorage.BuildTargetPath(directory, attachment.FileName);
             await File.WriteAllBytesAsync(path, bytes, ct);
+
+            attachment.CompleteDownload(path);
+            if (SelectedMessage != mail) return;
 
             LastSavedFilePath = path;
             HasSavedAttachment = true;
@@ -161,9 +169,11 @@ public partial class SentTabViewModel : ObservableObject
         }
         catch (OperationCanceledException)
         {
+            attachment.FailDownload();
         }
         catch (Exception ex)
         {
+            attachment.FailDownload();
             Status = $"下载失败：{ex.Message}";
         }
     }

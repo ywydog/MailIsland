@@ -130,7 +130,8 @@ public sealed class MailClientService : IMailClientService
 
     /// <summary>下载指定邮件的单个附件。</summary>
     public async Task<byte[]> DownloadAttachmentAsync(
-        MailAccountSettings account, string plainPassword, uint uid, string partSpecifier, CancellationToken ct)
+        MailAccountSettings account, string plainPassword, uint uid, string partSpecifier,
+        CancellationToken ct, IProgress<double>? progress = null)
     {
         using var client = new ImapClient();
         await ConnectAsync(client, account, plainPassword, ct);
@@ -148,8 +149,11 @@ public sealed class MailClientService : IMailClientService
             throw new InvalidOperationException("未找到该附件，可能已被删除或邮件结构已变化。");
         }
 
-        var entity = await inbox.GetBodyPartAsync(new UniqueId(uid), bodyPart, ct)
-                     ?? throw new InvalidOperationException("无法获取附件内容。");
+        var totalOctets = bodyPart is BodyPartBasic basic ? (long)basic.Octets : 0L;
+
+        var entity = await inbox.GetBodyPartAsync(
+            new UniqueId(uid), bodyPart, ct, new AttachmentProgress(progress, totalOctets))
+            ?? throw new InvalidOperationException("无法获取附件内容。");
         using var stream = new MemoryStream();
 
         switch (entity)
@@ -399,6 +403,20 @@ public sealed class MailClientService : IMailClientService
                 message.TextBody = text.Text;
             }
         }
+    }
+
+    /// <summary>把 MailKit 的字节进度换算成百分比，供界面进度条使用。</summary>
+    private sealed class AttachmentProgress(IProgress<double>? progress, long fallbackTotal) : ITransferProgress
+    {
+        public void Report(long bytesTransferred, long totalSize)
+        {
+            var total = totalSize > 0 ? totalSize : fallbackTotal;
+            if (progress == null || total <= 0) return;
+
+            progress.Report(Math.Clamp(bytesTransferred * 100d / total, 0d, 100d));
+        }
+
+        public void Report(long bytesTransferred) => Report(bytesTransferred, fallbackTotal);
     }
 
     /// <summary>

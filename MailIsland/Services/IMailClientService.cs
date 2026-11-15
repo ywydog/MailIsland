@@ -21,9 +21,10 @@ public interface IMailClientService
     Task FillBodiesAsync(
         MailAccountSettings account, string plainPassword, IReadOnlyList<MailMessage> mails, CancellationToken ct);
 
-    /// <summary>下载指定邮件的单个附件。</summary>
+    /// <summary>下载指定邮件的单个附件；<paramref name="progress"/> 以 0–100 报告进度。</summary>
     Task<byte[]> DownloadAttachmentAsync(
-        MailAccountSettings account, string plainPassword, uint uid, string partSpecifier, CancellationToken ct);
+        MailAccountSettings account, string plainPassword, uint uid, string partSpecifier,
+        CancellationToken ct, IProgress<double>? progress = null);
 
     /// <summary>把邮件标记为已读（服务器端 \Seen）。</summary>
     Task MarkAsReadAsync(
