@@ -47,7 +47,7 @@
                           x:Name="BodyScroll"
                           VerticalScrollBarVisibility="Auto"
                           HorizontalScrollBarVisibility="Disabled"
-                          MinHeight="80"
+                          MinHeight="60"
                           Margin="0,4,0,12">
                 <TextBlock Text="{Binding Body}"
                            TextWrapping="Wrap"
