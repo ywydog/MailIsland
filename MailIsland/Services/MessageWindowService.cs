@@ -21,6 +21,7 @@ public sealed class MessageWindowService
     private readonly ILogger<MessageWindowService> _logger;
 
     private readonly Queue<MessageWindowRequest> _queue = new();
+    private readonly List<MessageWindow> _previewWindows = new();
     private MessageWindow? _current;
     private bool _isShuttingDown;
 
@@ -109,6 +110,8 @@ public sealed class MessageWindowService
         };
 
         var window = CreateWindow(request);
+        _previewWindows.Add(window);
+        window.Closed += (_, _) => _previewWindows.Remove(window);
         window.Show();
         window.Activate();
     }
@@ -126,6 +129,13 @@ public sealed class MessageWindowService
         _queue.Clear();
         _current?.ForceClose();
         _current = null;
+
+        foreach (var window in _previewWindows.ToList())
+        {
+            window.ForceClose();
+        }
+
+        _previewWindows.Clear();
     }
 
     private void ShowNext()

@@ -66,7 +66,8 @@
                 <StackPanel Spacing="8">
                     <TextBlock Text="{Binding StatusText}"
                                FontSize="14"
-                               FontWeight="DemiBold" />
+                               FontWeight="DemiBold"
+                               TextWrapping="Wrap" />
                     <ProgressBar Height="5"
                                  Minimum="0"
                                  Maximum="{Binding ProgressMaximum}"

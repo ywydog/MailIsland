@@ -47,9 +47,17 @@ public partial class NotifyTabPage : SettingsPageBase
 
         if (toggle.IsChecked == true)
         {
+            var accepted = false;
             toggle.IsEnabled = false;
-            var accepted = await ShowMessageWindowAgreementAsync();
-            toggle.IsEnabled = true;
+            try
+            {
+                accepted = await ShowMessageWindowAgreementAsync();
+            }
+            finally
+            {
+                toggle.IsEnabled = true;
+            }
+
             if (!accepted)
             {
                 toggle.IsChecked = false;
@@ -107,7 +115,14 @@ public partial class NotifyTabPage : SettingsPageBase
 
     private void OnOpenMessageWindowSettingsClick(object? sender, RoutedEventArgs e)
     {
-        IAppHost.TryGetService<IUriNavigationService>()?.NavigateWrapped(
+        var navigation = IAppHost.TryGetService<IUriNavigationService>();
+        if (navigation is null)
+        {
+            StatusText.Text = "无法打开设置页，请重启 ClassIsland 后重试。";
+            return;
+        }
+
+        navigation.NavigateWrapped(
             new Uri($"classisland://app/settings/{GlobalConstants.MessageWindowSettingsPageId}"));
     }
 
