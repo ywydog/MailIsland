@@ -28,6 +28,7 @@ public partial class Plugin : PluginBase
         services.AddSingleton<ISmtpClientService, SmtpClientService>();
         services.AddSingleton<Storage.MailCacheStore>();
         services.AddSingleton<MailNotificationProvider>();
+        services.AddSingleton<MessageWindowService>();
         services.AddSingleton<MailPollingService>();
         services.AddHostedService(sp => sp.GetRequiredService<MailPollingService>());
 
@@ -66,9 +67,10 @@ public partial class Plugin : PluginBase
         services.AddSettingsPage<SettingsPage.Views.SentTabPage>();
         services.AddSettingsPage<SettingsPage.Views.NotifyTabPage>();
 
-        // 应用停止时保存配置
+        // 应用停止时关闭消息窗口并保存配置
         AppBase.Current.AppStopping += (_, _) =>
         {
+            IAppHost.TryGetService<MessageWindowService>()?.Shutdown();
             IAppHost.GetService<MailIslandConfigHandler>()?.Save();
         };
     }
