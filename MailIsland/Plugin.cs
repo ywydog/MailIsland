@@ -53,6 +53,7 @@ public partial class Plugin : PluginBase
         services.AddAction<Services.Automation.Actions.SetMailNotificationEnabledAction, Controls.Automation.NotificationToggleSettingsControl>();
         services.AddAction<Services.Automation.Actions.SetQuietHoursAction, Controls.Automation.NotificationToggleSettingsControl>();
         services.AddAction<Services.Automation.Actions.SendScreenshotAction, Controls.Automation.SendScreenshotActionSettingsControl>();
+        services.AddAction<Services.Automation.Actions.SendCameraAction, Controls.Automation.SendCameraActionSettingsControl>();
 
         // 行动在“添加行动”菜单中归入分组，不单独平铺
         BuildActionMenuTree();
@@ -65,6 +66,7 @@ public partial class Plugin : PluginBase
         services.AddSettingsPage<SettingsPage.Views.MailTabPage>();
         services.AddSettingsPage<SettingsPage.Views.SentTabPage>();
         services.AddSettingsPage<SettingsPage.Views.NotifyTabPage>();
+        services.AddSettingsPage<SettingsPage.Views.TestTabPage>();
 
         // 应用停止时保存配置
         AppBase.Current.AppStopping += (_, _) =>
@@ -77,10 +79,10 @@ public partial class Plugin : PluginBase
     private static void BuildActionMenuTree()
     {
         IActionService.ActionMenuTree.Add(new ActionMenuTreeGroup("MailIsland 行动", FluentIcons.MailRegular,
-            new ActionMenuTreeGroup("邮件…", FluentIcons.MailInboxRegular,
-                new ActionMenuTreeItem(Shared.GlobalConstants.SendMailActionId, "发送邮件", FluentIcons.SendRegular),
-                new ActionMenuTreeItem(Shared.GlobalConstants.SetMailNotificationActionId, "开关邮件提醒", FluentIcons.MailAlertRegular),
-                new ActionMenuTreeItem(Shared.GlobalConstants.SetQuietHoursActionId, "开关免打扰", FluentIcons.AlertOffRegular),
-                new ActionMenuTreeItem(Shared.GlobalConstants.SendScreenshotActionId, "将屏幕截图发送", FluentIcons.ScreenshotRegular))));
+            new ActionMenuTreeItem(Shared.GlobalConstants.SendMailActionId, "发送邮件", FluentIcons.SendRegular),
+            new ActionMenuTreeItem(Shared.GlobalConstants.SetMailNotificationActionId, "开关邮件提醒", FluentIcons.MailAlertRegular),
+            new ActionMenuTreeItem(Shared.GlobalConstants.SetQuietHoursActionId, "开关免打扰", FluentIcons.AlertOffRegular),
+            new ActionMenuTreeItem(Shared.GlobalConstants.SendScreenshotActionId, "将屏幕截图发送", FluentIcons.ScreenshotRegular),
+            new ActionMenuTreeItem(Shared.GlobalConstants.SendCameraActionId, "将摄像头画面发送", FluentIcons.CameraRegular)));
     }
 }

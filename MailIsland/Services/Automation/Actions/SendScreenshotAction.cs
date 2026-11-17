@@ -1,6 +1,5 @@
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.Runtime.InteropServices;
 using ClassIsland.Core.Abstractions.Automation;
 using ClassIsland.Core.Attributes;
 using ClassIsland.Core.Icons;
@@ -8,6 +7,7 @@ using MailIsland.ConfigHandlers;
 using MailIsland.Logic.Config;
 using MailIsland.Logic.Mail;
 using MailIsland.Models.Automation;
+using MailIsland.Services.Capture;
 using MailIsland.Shared;
 using Microsoft.Extensions.Logging;
 using MimeKit;
@@ -23,11 +23,6 @@ public class SendScreenshotAction(
     ISmtpClientService smtp,
     IMailClientService mail) : ActionBase<SendScreenshotActionSettings>
 {
-    private const int SmXVirtualScreen = 76;
-    private const int SmYVirtualScreen = 77;
-    private const int SmCxVirtualScreen = 78;
-    private const int SmCyVirtualScreen = 79;
-
     protected override async Task OnInvoke()
     {
         await base.OnInvoke();
@@ -49,7 +44,7 @@ public class SendScreenshotAction(
             throw new InvalidOperationException($"屏幕截图发送：收件人格式不正确：{string.Join("、", to.Invalid)}");
         }
 
-        using var bitmap = CaptureScreen();
+        using var bitmap = ScreenCapture.Capture();
         using var imageStream = new MemoryStream();
         bitmap.Save(imageStream, ImageFormat.Png);
         imageStream.Position = 0;
@@ -72,31 +67,6 @@ public class SendScreenshotAction(
         }
 
         logger.LogInformation("屏幕截图已发送（{Width}×{Height}）", bitmap.Width, bitmap.Height);
-    }
-
-    private static Bitmap CaptureScreen()
-    {
-        var x = GetSystemMetrics(SmXVirtualScreen);
-        var y = GetSystemMetrics(SmYVirtualScreen);
-        var width = GetSystemMetrics(SmCxVirtualScreen);
-        var height = GetSystemMetrics(SmCyVirtualScreen);
-        if (width <= 0 || height <= 0)
-        {
-            throw new InvalidOperationException("屏幕截图发送：无法获取屏幕尺寸。");
-        }
-
-        var bitmap = new Bitmap(width, height, PixelFormat.Format32bppArgb);
-        try
-        {
-            using var graphics = Graphics.FromImage(bitmap);
-            graphics.CopyFromScreen(x, y, 0, 0, new Size(width, height), CopyPixelOperation.SourceCopy);
-            return bitmap;
-        }
-        catch
-        {
-            bitmap.Dispose();
-            throw;
-        }
     }
 
     private MimeMessage BuildMessage(MailAccountSettings account, Bitmap bitmap, Stream imageStream)
@@ -148,7 +118,4 @@ public class SendScreenshotAction(
 
         return accounts[0];
     }
-
-    [DllImport("user32.dll")]
-    private static extern int GetSystemMetrics(int nIndex);
 }

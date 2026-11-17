@@ -1,0 +1,54 @@
+<ci:SettingsPageBase x:Class="MailIsland.SettingsPage.Views.TestTabPage"
+                     xmlns="https://github.com/avaloniaui"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                     xmlns:ci="http://classisland.tech/schemas/xaml/core"
+                     xmlns:controls="clr-namespace:FluentAvalonia.UI.Controls;assembly=FluentAvalonia">
+
+    <ScrollViewer>
+        <StackPanel Classes="settings-container" Spacing="12">
+            <controls:FASettingsExpander Header="连接测试"
+                                         Description="直接访问邮箱服务器，验证账号配置是否正确">
+                <controls:FASettingsExpanderItem Content="测试发信（SMTP）"
+                                                 IsClickEnabled="True"
+                                                 Click="OnTestSmtpClick" />
+                <controls:FASettingsExpanderItem Content="测试收信（IMAP）"
+                                                 IsClickEnabled="True"
+                                                 Click="OnTestImapClick" />
+            </controls:FASettingsExpander>
+
+            <controls:FASettingsExpander Header="画面测试"
+                                         Description="直接抓取画面并保存到桌面，便于确认截图与摄像头是否可用">
+                <controls:FASettingsExpanderItem Content="获取屏幕截图（保存到桌面）"
+                                                 IsClickEnabled="True"
+                                                 Click="OnCaptureScreenClick" />
+                <controls:FASettingsExpanderItem Content="获取默认摄像头画面（保存到桌面）"
+                                                 IsClickEnabled="True"
+                                                 Click="OnCaptureCameraClick" />
+            </controls:FASettingsExpander>
+
+            <controls:FASettingsExpander Header="提醒测试"
+                                         Description="按当前提醒设置推送一条示例提醒">
+                <controls:FASettingsExpanderItem Content="推送示例提醒"
+                                                 IsClickEnabled="True"
+                                                 Click="OnTestNotificationClick" />
+            </controls:FASettingsExpander>
+
+            <controls:FASettingsExpander Header="同步测试"
+                                         Description="立即执行一次收件同步">
+                <controls:FASettingsExpanderItem Content="立即同步"
+                                                 IsClickEnabled="True"
+                                                 Click="OnTestSyncClick" />
+            </controls:FASettingsExpander>
+
+            <TextBlock x:Name="StatusText"
+                       FontSize="12"
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+
+            <TextBlock Text="这些操作会实际访问邮箱服务器，仅用于排查问题。此页面属于调试页，需在 ClassIsland 设置中开启“调试选项”后才会显示。"
+                       FontSize="12"
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+        </StackPanel>
+    </ScrollViewer>
+</ci:SettingsPageBase>
