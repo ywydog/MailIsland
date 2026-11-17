@@ -11,8 +11,8 @@ using MailIsland.Shared;
 
 namespace MailIsland.SettingsPage.Views;
 
-/// <summary>“消息窗口”独立设置页，仅在启用消息窗口后由插件注册。</summary>
-[Group(GlobalConstants.EnhanceSettingsGroupId)]
+/// <summary>“消息窗口”独立设置页，与“消息提醒”“发件箱”同级，仅在启用消息窗口后由插件注册。</summary>
+[Group(GlobalConstants.SettingsGroupId)]
 [SettingsPageInfo(GlobalConstants.MessageWindowSettingsPageId, "消息窗口", FluentIcons.MailAlertRegular, FluentIcons.MailAlertRegular)]
 public partial class MessageWindowSettingsPage : SettingsPageBase
 {

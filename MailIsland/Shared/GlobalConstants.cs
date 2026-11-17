@@ -27,9 +27,6 @@ public static class GlobalConstants
     /// <summary>设置页分组 ID（把多个设置页折叠为“邮箱设置”分组）。</summary>
     public const string SettingsGroupId = "mailisland.settings";
 
-    /// <summary>“提醒增强”设置分组 ID；仅在消息窗口启用时注册。</summary>
-    public const string EnhanceSettingsGroupId = "mailisland.settings.enhance";
-
     /// <summary>“消息窗口”独立设置页 ID。</summary>
     public const string MessageWindowSettingsPageId = "mailisland.settings.messagewindow";
 }

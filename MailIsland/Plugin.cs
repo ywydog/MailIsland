@@ -23,7 +23,7 @@ public partial class Plugin : PluginBase
         GlobalConstants.PluginConfigFolder = PluginConfigFolder;
         GlobalConstants.PluginFolder = Info.PluginFolderPath;
 
-        // 配置需在注册设置页前加载，用于决定是否注册“提醒增强”分组
+        // 配置需在注册设置页前加载，用于决定是否注册“消息窗口”设置页
         var configHandler = new MailIslandConfigHandler(NullLogger<MailIslandConfigHandler>.Instance);
         services.AddSingleton(configHandler);
 
@@ -71,11 +71,9 @@ public partial class Plugin : PluginBase
         services.AddSettingsPage<SettingsPage.Views.SentTabPage>();
         services.AddSettingsPage<SettingsPage.Views.NotifyTabPage>();
 
-        // “提醒增强”分组与“消息窗口”页面默认不注册，启用消息窗口后才出现
+        // “消息窗口”页面与“消息提醒”“发件箱”同级，默认不注册，启用消息窗口后才出现
         if (configHandler.Data.MessageWindow.Enabled)
         {
-            services.AddSettingsPageGroup(
-                GlobalConstants.EnhanceSettingsGroupId, FluentIcons.AlertRegular, "提醒增强");
             services.AddSettingsPage<SettingsPage.Views.MessageWindowSettingsPage>();
         }
 

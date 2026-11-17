@@ -14,7 +14,7 @@ public sealed class MessageWindowSettings
     public const int DefaultDisplaySeconds = 15;
     public const string DefaultAcknowledgeText = "收到";
 
-    /// <summary>是否启用消息窗口。关闭时不注册“提醒增强”分组与页面。</summary>
+    /// <summary>是否启用消息窗口。关闭时不注册“消息窗口”设置页。</summary>
     public bool Enabled { get; set; }
 
     /// <summary>正文无需滚动时的停留秒数；长正文在滚动结束后开始倒计时。</summary>
