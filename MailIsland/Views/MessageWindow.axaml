@@ -1,0 +1,113 @@
+<ci:MyWindow x:Class="MailIsland.Views.MessageWindow"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ci="http://classisland.tech/schemas/xaml/core"
+             Title="新邮件提醒"
+             Width="520" Height="400"
+             MinWidth="360" MinHeight="380"
+             WindowStartupLocation="CenterScreen"
+             CanResize="True"
+             CanMinimize="False"
+             CanMaximize="False"
+             Topmost="True"
+             ShowInTaskbar="False">
+
+    <Border Background="{DynamicResource LayerFillColorAltBrush}"
+            CornerRadius="8"
+            Padding="20">
+        <Grid RowDefinitions="Auto,Auto,Auto,*,Auto,Auto">
+
+            <!-- 窗口内的小字说明，视觉层级低于发件人 -->
+            <TextBlock Grid.Row="0"
+                       Text="新邮件提醒"
+                       FontSize="13"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                       Margin="0,0,0,8" />
+
+            <!-- 发件人是窗口中的最大字信息 -->
+            <TextBlock Grid.Row="1"
+                       Text="{Binding Sender}"
+                       FontSize="30"
+                       FontWeight="SemiBold"
+                       TextWrapping="Wrap"
+                       MaxLines="2"
+                       TextTrimming="CharacterEllipsis"
+                       Margin="0,0,0,4" />
+
+            <!-- 消息类型由主题规则命中；未命中时整行隐藏 -->
+            <TextBlock Grid.Row="2"
+                       Text="{Binding MessageType}"
+                       FontSize="15"
+                       Foreground="{DynamicResource AccentFillColorDefaultBrush}"
+                       IsVisible="{Binding HasMessageType}"
+                       Margin="0,0,0,8" />
+
+            <!-- 正文区占满剩余高度，窗口缩放时自动适应 -->
+            <ScrollViewer Grid.Row="3"
+                          x:Name="BodyScroll"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          MinHeight="60"
+                          Margin="0,4,0,12">
+                <TextBlock Text="{Binding Body}"
+                           TextWrapping="Wrap"
+                           FontSize="15"
+                           LineHeight="24"
+                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+            </ScrollViewer>
+
+            <!-- 滚动/倒计时/下载状态，样式与询问窗的倒计时面板一致 -->
+            <Border Grid.Row="4"
+                    Padding="12"
+                    CornerRadius="6"
+                    Background="{DynamicResource SystemFillColorAttentionBackgroundBrush}"
+                    IsVisible="{Binding IsStatusVisible}"
+                    Margin="0,0,0,12">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="{Binding StatusText}"
+                               FontSize="14"
+                               FontWeight="DemiBold"
+                               TextWrapping="Wrap" />
+                    <ProgressBar Height="5"
+                                 Minimum="0"
+                                 Maximum="{Binding ProgressMaximum}"
+                                 Value="{Binding ProgressValue}"
+                                 IsIndeterminate="{Binding IsProgressIndeterminate}">
+                        <ProgressBar.Styles>
+                            <Style Selector="ProgressBar">
+                                <Setter Property="Foreground"
+                                        Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                            </Style>
+                        </ProgressBar.Styles>
+                    </ProgressBar>
+                </StackPanel>
+            </Border>
+
+            <Grid Grid.Row="5" ColumnDefinitions="*,Auto,Auto">
+                <TextBlock Grid.Column="0"
+                           Text="{Binding AttachmentSummary}"
+                           VerticalAlignment="Center"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                           TextTrimming="CharacterEllipsis" />
+                <Button Grid.Column="1"
+                        x:Name="ForceCloseButton"
+                        Content="仍然关闭"
+                        IsVisible="{Binding IsForceCloseVisible}"
+                        MinWidth="84"
+                        Height="33"
+                        Margin="0,0,8,0"
+                        Click="OnForceCloseClick" />
+                <Button Grid.Column="2"
+                        x:Name="AcknowledgeButton"
+                        Content="{Binding AcknowledgeText}"
+                        Classes="accent"
+                        IsDefault="True"
+                        MinWidth="96"
+                        Height="33"
+                        IsEnabled="{Binding IsAcknowledgeEnabled}"
+                        Click="OnAcknowledgeClick" />
+            </Grid>
+        </Grid>
+    </Border>
+</ci:MyWindow>

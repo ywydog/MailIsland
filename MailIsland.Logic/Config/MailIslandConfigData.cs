@@ -50,6 +50,8 @@ public sealed class MailIslandConfigData
     public List<QuietHoursPeriod> QuietHoursPeriods { get; set; } = new();
     /// <summary>上课时是否免打扰（需同时启用免打扰）。</summary>
     public bool QuietDuringClass { get; set; }
+    /// <summary>消息窗口增强配置。</summary>
+    public MessageWindowSettings MessageWindow { get; set; } = new();
     /// <summary>旧版单时段开始时间，仅用于迁移。</summary>
     public string QuietHoursStart { get; set; } = "21:00";
     /// <summary>旧版单时段结束时间，仅用于迁移。</summary>

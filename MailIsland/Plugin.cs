@@ -10,6 +10,7 @@ using MailIsland.Services;
 using MailIsland.Shared;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace MailIsland;
 
@@ -22,12 +23,16 @@ public partial class Plugin : PluginBase
         GlobalConstants.PluginConfigFolder = PluginConfigFolder;
         GlobalConstants.PluginFolder = Info.PluginFolderPath;
 
+        // 配置需在注册设置页前加载，用于决定是否注册“消息窗口”设置页
+        var configHandler = new MailIslandConfigHandler(NullLogger<MailIslandConfigHandler>.Instance);
+        services.AddSingleton(configHandler);
+
         // 基础服务
-        services.AddSingleton<MailIslandConfigHandler>();
         services.AddSingleton<IMailClientService, MailClientService>();
         services.AddSingleton<ISmtpClientService, SmtpClientService>();
         services.AddSingleton<Storage.MailCacheStore>();
         services.AddSingleton<MailNotificationProvider>();
+        services.AddSingleton<MessageWindowService>();
         services.AddSingleton<MailPollingService>();
         services.AddHostedService(sp => sp.GetRequiredService<MailPollingService>());
 
@@ -68,9 +73,16 @@ public partial class Plugin : PluginBase
         services.AddSettingsPage<SettingsPage.Views.NotifyTabPage>();
         services.AddSettingsPage<SettingsPage.Views.TestTabPage>();
 
-        // 应用停止时保存配置
+        // “消息窗口”页面与“消息提醒”“发件箱”同级，默认不注册，启用消息窗口后才出现
+        if (configHandler.Data.MessageWindow.Enabled)
+        {
+            services.AddSettingsPage<SettingsPage.Views.MessageWindowSettingsPage>();
+        }
+
+        // 应用停止时关闭消息窗口并保存配置
         AppBase.Current.AppStopping += (_, _) =>
         {
+            IAppHost.TryGetService<MessageWindowService>()?.Shutdown();
             IAppHost.GetService<MailIslandConfigHandler>()?.Save();
         };
     }

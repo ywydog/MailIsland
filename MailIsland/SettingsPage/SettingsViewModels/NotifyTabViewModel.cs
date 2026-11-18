@@ -52,6 +52,9 @@ public partial class NotifyTabViewModel : ObservableObject
 
     public Array MatchScopes => Enum.GetValues(typeof(KeywordMatchScope));
 
+    /// <summary>消息窗口是否启用；设置页只读展示，修改需经确认并重启。</summary>
+    public bool MessageWindowEnabled => _config.Data.MessageWindow.Enabled;
+
     /// <summary>正文层显示选项的中文名，顺序与 <see cref="OverlayContentKind"/> 一致。</summary>
     public string[] OverlayContentKindNames => ["发件人 + 主题", "邮件正文", "仅主题", "仅发件人"];
 
@@ -175,6 +178,14 @@ public partial class NotifyTabViewModel : ObservableObject
     }
 
     private void SaveQuietHours() => _config.Save();
+
+    /// <summary>写入消息窗口开关；调用方负责重启 ClassIsland 让设置页注册生效。</summary>
+    public void SetMessageWindowEnabled(bool enabled)
+    {
+        _config.Data.MessageWindow.Enabled = enabled;
+        _config.Save();
+        OnPropertyChanged(nameof(MessageWindowEnabled));
+    }
 
     /// <summary>添加一条关键词规则。</summary>
     public void AddKeyword()

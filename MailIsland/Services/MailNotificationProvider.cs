@@ -27,6 +27,13 @@ public sealed class MailNotificationProvider : NotificationProviderBase
     /// <summary>正文层文本的最大长度，避免滚动展示时间过长。</summary>
     private const int MaxOverlayLength = 240;
 
+    private readonly MessageWindowService _messageWindow;
+
+    public MailNotificationProvider(MessageWindowService messageWindow)
+    {
+        _messageWindow = messageWindow;
+    }
+
     /// <summary>推送新邮件提醒。</summary>
     public void Notify(
         MailMessage mail,
@@ -35,6 +42,13 @@ public sealed class MailNotificationProvider : NotificationProviderBase
         bool keywordHit,
         string? keyword = null)
     {
+        // 启用消息窗口后完全绕过 ClassIsland 的提醒渠道，只走插件窗口。
+        if (config.MessageWindow.Enabled)
+        {
+            _messageWindow.Enqueue(mail, account, config);
+            return;
+        }
+
         var mask = NotificationContent.CreateSimpleTextContent(BuildMaskTitle(mail, account, config.MaskContentKind, keywordHit, keyword));
         mask.IsSpeechEnabled = config.NotificationSpeechEnabled;
 
@@ -56,6 +70,17 @@ public sealed class MailNotificationProvider : NotificationProviderBase
         MailAccountSettings account, IReadOnlyList<MailMessage> mails, MailIslandConfigData config)
     {
         if (mails.Count == 0) return;
+
+        // 消息窗口模式逐封显示，避免类型与附件归属混淆。
+        if (config.MessageWindow.Enabled)
+        {
+            foreach (var mail in mails)
+            {
+                _messageWindow.Enqueue(mail, account, config);
+            }
+
+            return;
+        }
 
         var title = $"{account.DisplayName} 收到 {mails.Count} 封新邮件";
         var mask = NotificationContent.CreateSimpleTextContent(title);

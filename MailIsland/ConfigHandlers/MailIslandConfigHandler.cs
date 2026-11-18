@@ -89,6 +89,13 @@ public sealed class MailIslandConfigHandler
             rule.Keyword = Unprotect(rule.Keyword, ref _needsSave);
         }
 
+        data.MessageWindow ??= new MessageWindowSettings();
+        data.MessageWindow.Normalize();
+        foreach (var rule in data.MessageWindow.TypeRules)
+        {
+            rule.SubjectKeyword = Unprotect(rule.SubjectKeyword, ref _needsSave);
+        }
+
         MigrateQuietHours(data);
 
         if (_needsSave)
@@ -143,6 +150,7 @@ public sealed class MailIslandConfigHandler
             Enabled = p.Enabled,
         }).ToList(),
         QuietDuringClass = Data.QuietDuringClass,
+        MessageWindow = BuildMessageWindowSnapshot(Data.MessageWindow),
         Accounts = Data.Accounts.Select(a => new MailAccountSettings
         {
             Id = a.Id,
@@ -171,6 +179,18 @@ public sealed class MailIslandConfigHandler
 
     private string Protect(string value) =>
         string.IsNullOrEmpty(value) ? "" : _protector.Encrypt(value);
+
+    /// <summary>构造消息窗口配置快照，并按关键词规则的方式加密主题关键词。</summary>
+    private MessageWindowSettings BuildMessageWindowSnapshot(MessageWindowSettings source)
+    {
+        var snapshot = source.Clone();
+        foreach (var rule in snapshot.TypeRules)
+        {
+            rule.SubjectKeyword = Protect(rule.SubjectKeyword);
+        }
+
+        return snapshot;
+    }
 
     /// <summary>
     /// 解密字段。旧版本明文（非 Base64 形态）原样返回并标记需要重新加密；

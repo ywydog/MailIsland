@@ -1,0 +1,157 @@
+<ci:SettingsPageBase x:Class="MailIsland.SettingsPage.Views.MessageWindowSettingsPage"
+                     xmlns="https://github.com/avaloniaui"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                     xmlns:ci="http://classisland.tech/schemas/xaml/core"
+                     xmlns:controls="clr-namespace:FluentAvalonia.UI.Controls;assembly=FluentAvalonia">
+
+    <ScrollViewer>
+        <StackPanel Classes="settings-container" Spacing="12">
+
+            <TextBlock Text="消息窗口会逐封显示新邮件，居中置顶、不可关闭和最小化。启用后新邮件提醒不再经过 ClassIsland 提醒渠道。"
+                       TextWrapping="Wrap"
+                       FontSize="13"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+
+            <controls:FASettingsExpander Header="显示与倒计时"
+                                       Description="正文超出可视区域时自动滚动，滚动结束后开始倒计时。">
+                <StackPanel Spacing="10">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="显示秒数" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <NumericUpDown Minimum="3" Maximum="120"
+                                       Value="{Binding DisplaySeconds, Mode=TwoWay}"
+                                       Width="130" />
+                        <TextBlock Text="（滚动结束后开始倒计时）" VerticalAlignment="Center"
+                                   FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="自动滚动" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <ToggleSwitch IsChecked="{Binding AutoScroll, Mode=TwoWay}" />
+                        <TextBlock Text="（默认开启；关闭时直接开始倒计时）" VerticalAlignment="Center"
+                                   FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                    </StackPanel>
+                </StackPanel>
+            </controls:FASettingsExpander>
+
+            <controls:FASettingsExpander Header="窗口大小"
+                                       Description="设置消息窗口的默认大小；窗口显示后可拖动缩放。">
+                <StackPanel Spacing="10">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="宽度" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            <NumericUpDown Minimum="360" Maximum="1200"
+                                           Value="{Binding WindowWidth, Mode=TwoWay}"
+                                           Width="120" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="高度" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            <NumericUpDown Minimum="380" Maximum="900"
+                                           Value="{Binding WindowHeight, Mode=TwoWay}"
+                                           Width="120" />
+                        </StackPanel>
+                        <Button Content="恢复默认" Click="OnResetWindowSizeClick" />
+                        <Button Content="预览" Classes="accent" Click="OnPreviewClick" />
+                    </StackPanel>
+                    <TextBlock Text="单位为 DIP；屏幕较小时会自动限制在可用区域内。"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                </StackPanel>
+            </controls:FASettingsExpander>
+
+            <controls:FASettingsExpander Header="收到按钮"
+                                       Description="按钮默认文案为“收到”，点击后关闭窗口。">
+                <StackPanel Spacing="10">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="按钮文字" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBox Width="220"
+                                 Text="{Binding AcknowledgeText, Mode=TwoWay}"
+                                 PlaceholderText="收到" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="收到时下载全部附件" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <ToggleSwitch IsChecked="{Binding DownloadAttachmentsOnAcknowledge, Mode=TwoWay}" />
+                        <TextBlock Text="（默认关闭；仅点击按钮时下载，自动关闭不下载）" VerticalAlignment="Center"
+                                   FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                    </StackPanel>
+                </StackPanel>
+            </controls:FASettingsExpander>
+
+            <controls:FASettingsExpander Header="消息类型"
+                                       Description="读取邮件主题，按顺序匹配第一条启用的规则；未命中时不显示类型行。">
+                <controls:FASettingsExpander.Footer>
+                    <Button x:Name="AddTypeRuleButton" Content="添加类型" Classes="accent" />
+                </controls:FASettingsExpander.Footer>
+
+                <ItemsControl x:Name="TypeRuleList">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Margin="0,4"
+                                    Padding="12,8"
+                                    CornerRadius="6"
+                                    Background="{DynamicResource LayerFillColorDefaultBrush}">
+                                <Grid RowDefinitions="Auto,Auto,Auto"
+                                      ColumnDefinitions="*,Auto,Auto">
+                                    <TextBox Grid.Row="0" Grid.Column="0"
+                                             Text="{Binding Name, Mode=TwoWay}"
+                                             PlaceholderText="类型名称，如：作业通知" />
+                                    <StackPanel Grid.Row="0" Grid.Column="1"
+                                                Orientation="Horizontal" Spacing="6"
+                                                Margin="8,0">
+                                        <TextBlock Text="启用" VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                        <ToggleSwitch IsChecked="{Binding Enabled, Mode=TwoWay}" />
+                                    </StackPanel>
+                                    <Button Grid.Row="0" Grid.Column="2"
+                                            Content="删除"
+                                            Click="OnRemoveTypeRuleClick" />
+                                    <TextBox Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
+                                             Margin="0,6,0,0"
+                                             Text="{Binding SubjectKeyword, Mode=TwoWay}"
+                                             PlaceholderText="主题包含该关键词时匹配，忽略大小写" />
+                                    <TextBox Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3"
+                                             Margin="0,6,0,0"
+                                             Text="{Binding SpeechText, Mode=TwoWay}"
+                                             PlaceholderText="该类型的播报文本（可选），支持 {sender} {type} {subject}" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </controls:FASettingsExpander>
+
+            <controls:FASettingsExpander Header="语音播报"
+                                       Description="使用 ClassIsland 的语音引擎朗读；默认关闭，避免泄露邮件内容。">
+                <StackPanel Spacing="10">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="启用语音播报" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <ToggleSwitch IsChecked="{Binding SpeechEnabled, Mode=TwoWay}" />
+                    </StackPanel>
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="默认播报文本"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBox Text="{Binding DefaultSpeechText, Mode=TwoWay}"
+                                 PlaceholderText="{}{sender} 发来新邮件" />
+                        <TextBlock Text="支持 {sender}、{type}、{subject} 占位符；类型规则中的播报文本优先。"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                    </StackPanel>
+                </StackPanel>
+            </controls:FASettingsExpander>
+
+            <TextBlock x:Name="StatusText"
+                       FontSize="12"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+
+            <TextBlock Text="提示：消息窗口启用后，ClassIsland 的提醒总开关、提醒特效、音效和置顶设置不再作用于邮件提醒；插件的提醒开关、账号开关、关键词和免打扰仍然生效。"
+                       TextWrapping="Wrap"
+                       FontSize="12"
+                       Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+        </StackPanel>
+    </ScrollViewer>
+</ci:SettingsPageBase>

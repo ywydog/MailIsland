@@ -14,6 +14,11 @@
             <controls:FASettingsExpander Header="新邮件提醒"
                                        Description="通过 ClassIsland 提醒服务推送新邮件提醒">
                 <StackPanel Spacing="12">
+                    <TextBlock Text="消息窗口已启用：下方的遮罩标题、正文层显示、显示方式和语音朗读仅对 ClassIsland 原提醒渠道生效。"
+                               IsVisible="{Binding MessageWindowEnabled}"
+                               TextWrapping="Wrap"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <TextBlock Text="启用提醒" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                         <ToggleSwitch IsChecked="{Binding NotifyEnabled, Mode=TwoWay}" />
@@ -45,7 +50,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <TextBlock Text="合并提醒" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                         <ToggleSwitch IsChecked="{Binding NotifySummaryMode, Mode=TwoWay}" />
-                        <TextBlock Text="（同一轮多封新邮件只弹一条）" VerticalAlignment="Center"
+                        <TextBlock Text="（同一轮多封新邮件只弹一条；消息窗口模式下逐封显示）" VerticalAlignment="Center"
                                    FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
                     </StackPanel>
                 </StackPanel>
@@ -164,6 +169,24 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
+
+            <controls:FASettingsExpander Header="提醒增强"
+                                       Description="启用插件自绘的消息窗口后，新邮件提醒不再经过 ClassIsland 提醒渠道。">
+                <controls:FASettingsExpander.Footer>
+                    <ToggleSwitch x:Name="MessageWindowToggle"
+                                  IsChecked="{Binding MessageWindowEnabled, Mode=OneWay}"
+                                  Click="OnMessageWindowToggleClick" />
+                </controls:FASettingsExpander.Footer>
+                <StackPanel Spacing="8">
+                    <TextBlock Text="消息窗口会逐封显示新邮件，居中置顶、不可关闭和最小化；启用或关闭后需要重启 ClassIsland。"
+                               TextWrapping="Wrap"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                    <Button x:Name="OpenMessageWindowSettingsButton"
+                            Content="打开消息窗口设置"
+                            Click="OnOpenMessageWindowSettingsClick" />
+                </StackPanel>
+            </controls:FASettingsExpander>
 
             <TextBlock x:Name="StatusText"
                        FontSize="12"
